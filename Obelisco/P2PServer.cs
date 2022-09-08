@@ -52,17 +52,6 @@ namespace Obelisco
         }
 
         #region Responses
-        protected override async ValueTask GetNodeTypeResponse(CancellationToken cancellationToken)
-        {
-            try
-            {
-                await SendResponse(new NodeTypeResponse() { IsFullNode = true }, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                await SendResponse<NodeTypeResponse>(null, cancellationToken, ex.Message);
-            }
-        }
 
         private async ValueTask GetBlockResponse(string blockId, CancellationToken cancellationToken)
         {

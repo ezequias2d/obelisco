@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace Obelisco
 {
-    public class Block
+    public class Block : IEquatable<Block>
     {
         public Block()
         {
@@ -42,6 +42,7 @@ namespace Obelisco
         public string Hash { get; set; } = null!;
 
         [ForeignKey("Previous")]
+        
         public string? PreviousHash { get; set; }
 
         [JsonIgnore]
@@ -104,6 +105,30 @@ namespace Obelisco
             
             stream.Position = 0;
             return stream;
+        }
+
+        public bool Equals(Block? other)
+        {
+            return other != null &&
+                Version == other.Version && 
+                Timestamp == other.Timestamp &&
+                Transactions.Count == other.Transactions.Count &&
+                !Transactions.SequenceEqual(other.Transactions) &&
+                Validator == other.Validator &&
+                Nonce == other.Nonce &&
+                Difficulty == other.Difficulty &&
+                PreviousHash == other.PreviousHash &&
+                Hash == other.Hash;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is Block other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return Hash.GetHashCode();
         }
     }
 }

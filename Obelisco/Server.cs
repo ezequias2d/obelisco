@@ -37,17 +37,17 @@ namespace Obelisco
             m_socketServerFactory = socketServerFactory;
             m_supportedSubProtocols = new HashSet<string>(supportedSubProtocols ?? Enumerable.Empty<string>());
             m_listener = null!;
+            IsFullNode = true;
         }
 
         public EndPoint LocalEndpoint => m_listener.LocalEndpoint;
         public int Port { get; private set; }
-        
 
         public void Listen(int port, CancellationToken cancellationToken)
         {
             try
             {
-                m_listener = new TcpListener(IPAddress.Any, port);
+                m_listener = new TcpListener(IPAddress.Loopback, port);
                 m_listener.Start();
                 m_task = Task.Run(async () =>
                 {
@@ -93,9 +93,15 @@ namespace Obelisco
                                 m_logger.LogInformation("Server: Connection closed"); 
                             }, cancellationToken);
 
-                            await OnConnected(p2p);
+                            p2p.Init();
 
-                            var uri = new Uri(tcpClient.Client.RemoteEndPoint.ToString());
+                            string remote = $"ws://{tcpClient.Client.RemoteEndPoint!.ToString()}";
+                            if (p2p.IsFullNode)
+                            {
+                                remote = $"ws://{await p2p.GetServerAddress(cancellationToken)}";
+                            }
+                            var uri = new Uri(remote);
+                            await OnConnected(uri, p2p);
                             m_connections[uri] = (p2p, task);
                         }
                         else

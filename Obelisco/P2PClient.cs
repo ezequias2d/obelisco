@@ -53,6 +53,7 @@ namespace Obelisco
                     await GetServersResponse(cancellationToken);
                     break;
                 case PostServersRequest m:
+                    await SendOkResponse(cancellationToken);
                     m_postServers?.Invoke(this, m);
                     break;
                 default:
@@ -65,11 +66,24 @@ namespace Obelisco
         {
             try
             {
-                await SendResponse(new NodeTypeResponse() { IsFullNode = false }, cancellationToken);
+                await SendResponse(new NodeTypeResponse() { IsFullNode = m_client.IsFullNode }, cancellationToken);
             }
             catch (Exception ex)
             {
                 await SendResponse<NodeTypeResponse>(null, cancellationToken, ex.Message);
+            }
+        }
+
+        protected override async ValueTask GetServerAddressResponse(CancellationToken cancellationToken)
+        {
+            try
+            {
+                var uri = m_client is Server server ? $"{server.LocalEndpoint}" : string.Empty;
+                await SendResponse(new ServerAddressResponse() { Uri = uri }, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                await SendResponse<ServerAddressResponse>(null, cancellationToken, ex.Message);
             }
         }
 
@@ -144,6 +158,12 @@ namespace Obelisco
         {
             await SendMessage(new GetDifficultyRequest(), cancellationToken);
             return WaitResponse<DifficultyReponse>(cancellationToken).Difficulty;
+        }
+
+        public async ValueTask<Balance> GetBalance(CancellationToken cancellationToken)
+        {
+            await SendMessage(new GetBalanceRequest(), cancellationToken);
+            return WaitResponse<BalanceResponse>(cancellationToken).Balance;
         }
     }
 }

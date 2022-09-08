@@ -25,6 +25,7 @@ namespace Obelisco
             m_socketFactory = socketFactory;
             m_logger = logger;
             m_connections = connections;
+            IsFullNode = false;
         }
 
         public event EventHandler<P2PClient> Connected 
@@ -32,9 +33,10 @@ namespace Obelisco
             add => m_connected += value; 
             remove => m_connected -= value;
         }
-
+        
+        public bool IsFullNode { get; protected set; }
         public bool IsDisposed { get; protected set; }
-        public Uri[] Servers => m_connections.Keys.ToArray();
+        public Uri[] Servers => m_connections.Where(p => p.Value.p2p.IsFullNode).Select(p => p.Key).ToArray();
         public P2PClient[] Connections => m_connections.Values.Select(e => e.p2p).ToArray();
 
         public virtual async ValueTask Connect(Uri uri, CancellationToken cancellationToken)
@@ -43,23 +45,25 @@ namespace Obelisco
                 throw new InvalidOperationException($"The client is already connected to '{uri}'.");
 
             var socket = await m_socketFactory.ConnectAsync(uri);
-            var p2p = new P2PClient(this, m_logger, socket, Guid.NewGuid());;
+            var p2p = new P2PClient(this, m_logger, socket, Guid.NewGuid());
 
             var task = Task.Run(async() =>
             {
                 await p2p.Receive(cancellationToken);
             }, cancellationToken);
 
-            await OnConnected(p2p);
-
+            p2p.Init();
+            await OnConnected(uri, p2p);
             m_connections[uri] = (p2p, task);
         }
 
-        protected async ValueTask OnConnected(P2PClient e)
+        protected async ValueTask OnConnected(Uri uri, P2PClient e)
         {
             m_connectionNotifyCount++;
-            if (m_connectionNotifyCount > 3)
-                await BroadcastServers(Servers.Select(u => u.ToString()).ToArray(), CancellationToken.None);
+
+            if (e.IsFullNode)
+                await BroadcastServers(new [] { uri.ToString() }, CancellationToken.None);
+
             m_connected?.Invoke(this, e);
         }
 

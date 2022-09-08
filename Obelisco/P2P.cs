@@ -27,6 +27,16 @@ namespace Obelisco
 
         public bool IsDisposed => m_isDisposed;
         public Guid ID { get; }
+        public bool IsFullNode { get; private set; }
+
+        internal void Init()
+        {
+            var source = new CancellationTokenSource();
+            var task = GetNodeType(source.Token).AsTask();
+            if (!task.Wait(30 * 1000))
+                throw new InvalidOperationException("The P2P dont response GetNodeType.");
+            IsFullNode = task.Result;
+        }
 
         internal async ValueTask Receive(CancellationToken cancellationToken)
         {
@@ -47,6 +57,7 @@ namespace Obelisco
                 }
 
                 var str = Encoding.UTF8.GetString(buffer.Array, 0, result.Count);
+                m_logger.LogInformation($"Receive: {str}");
 
                 Message? message = JsonSerializer.Deserialize<Message>(str);
                 LogInfo($"{this.ID}, {message?.GetType().Name ?? "NULL"}: {str}");
@@ -69,7 +80,20 @@ namespace Obelisco
             }
         }
 
+        public async ValueTask<bool> GetNodeType(CancellationToken cancellationToken)
+        {
+            await SendMessage(new GetNodeTypeRequest(), cancellationToken);
+            return WaitResponse<NodeTypeResponse>(cancellationToken).IsFullNode;
+        }
+
+        public async ValueTask<string> GetServerAddress(CancellationToken cancellationToken)
+        {
+            await SendMessage(new GetServerAddressRequest(), cancellationToken);
+            return WaitResponse<ServerAddressResponse>(cancellationToken).Uri;
+        }
+
         protected abstract ValueTask GetNodeTypeResponse(CancellationToken cancellationToken);
+        protected abstract ValueTask GetServerAddressResponse(CancellationToken cancellationToken);
 
 #region callbacks
         protected virtual async ValueTask OnMessage(Message? message, CancellationToken cancellationToken)
@@ -82,6 +106,9 @@ namespace Obelisco
                 {
                     case GetNodeTypeRequest m:
                         await GetNodeTypeResponse(cancellationToken);
+                        break;
+                    case GetServerAddressRequest m:
+                        await GetServerAddressResponse(cancellationToken);
                         break;
                     default:
                         var str = message != null ? JsonSerializer.Serialize<Message>(message) : "NULL";
@@ -130,6 +157,7 @@ namespace Obelisco
         {
             var data = Encoding.UTF8.GetBytes(str);
             var buffer = new ArraySegment<byte>(data);
+            m_logger.LogInformation($"Send: {str}");
             await m_socket.SendAsync(buffer, WebSocketMessageType.Text, true, cancellationToken);
         }
 
@@ -141,7 +169,6 @@ namespace Obelisco
         protected async ValueTask SendMessage(Message message, CancellationToken cancellationToken)
         {
             var str = JsonSerializer.Serialize<Message>(message);
-            m_logger.LogInformation($"Message: {message}");
             await Send(str, cancellationToken);
         }
 
@@ -149,7 +176,6 @@ namespace Obelisco
         {
             response ??= new TResponse() { Ok = false, Message = message ?? string.Empty };
             var str = JsonSerializer.Serialize<Message>(response);
-            m_logger.LogInformation($"Response: {message}");
             await Send(str, cancellationToken);
         }
 

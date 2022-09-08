@@ -30,6 +30,11 @@ namespace Obelisco
         public bool IsFullNode { get; set; }
     }
 
+    public class ServerAddressResponse : Response
+    {
+        public string Uri { get; set; } = null!;
+    }
+
     public class PendingTransactionsResponse : Response
     {
         public IEnumerable<PendingTransaction> Transactions { get; set; } = null!;
@@ -38,6 +43,11 @@ namespace Obelisco
     public class DifficultyReponse : Response
     {
         public int Difficulty { get; set; } = 2;
+    }
+
+    public class BalanceResponse : Response
+    {
+        public Balance Balance { get; set; } = null!;
     }
 #endregion
 
@@ -77,5 +87,7 @@ namespace Obelisco
 
     public class GetNodeTypeRequest : Request { }
     public class GetDifficultyRequest : Request { }
+    public class GetBalanceRequest : Request { }
+    public class GetServerAddressRequest : Request { }
 #endregion
 }

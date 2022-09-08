@@ -21,8 +21,6 @@ namespace Obelisco
 
         private static ThreadLocal<Random> m_random = new ThreadLocal<Random>(() => new Random());
 
-        private static Random Random => m_random.Value;
-
         public Blockchain(ILogger<Blockchain> logger, BlockchainContext context)
         {
             m_logger = logger;
@@ -41,8 +39,8 @@ namespace Obelisco
 
             while (block.Next != null)
             {
-                m_lastBlockHash = block.Hash;
                 block = block.Next;
+                m_lastBlockHash = block.Hash;
             }
 
             m_lastBlockLock = new AsyncReaderWriterLock();
