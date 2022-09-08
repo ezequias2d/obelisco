@@ -12,7 +12,7 @@ namespace Obelisco
         
         public DbSet<Block> Blocks { get; set; } = null!;
         public DbSet<Balance> Balances { get; set; } = null!;
-        public DbSet<CompleteTransaction> CompleteTransactions { get; set; } = null!;
+        public DbSet<Transaction> Transactions { get; set; } = null!;
         public DbSet<PendingTransaction> PendingTransactions { get; set; } = null!;
     }
 }

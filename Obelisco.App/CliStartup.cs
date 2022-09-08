@@ -26,8 +26,8 @@ namespace Obelisco
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddEntityFrameworkSqlite();
-            services.AddDbContext<BlockchainContext>(options => options.UseSqlite($"Data Source={AppDomain.CurrentDomain.BaseDirectory}/data.db"));
+            services.AddDbContext<BlockchainContext>(options =>
+                options.UseSqlite($"Data Source={AppDomain.CurrentDomain.BaseDirectory}/data.db"));
             services.AddSingleton<IWebSocketServerFactory, WebSocketServerFactory>();
             services.AddSingleton<IWebSocketClientFactory, WebSocketClientFactory>();
             services.AddSingleton<Blockchain>();

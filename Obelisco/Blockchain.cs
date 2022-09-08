@@ -34,7 +34,10 @@ namespace Obelisco
 
             Block block = m_context.Blocks.Find(genesis.Hash) ?? genesis;
             if (block == genesis)
+            {
                 m_context.Blocks.Add(genesis);
+                m_context.SaveChangesAsync();
+            }
 
             while (block.Next != null)
             {
@@ -44,6 +47,8 @@ namespace Obelisco
 
             m_lastBlockLock = new AsyncReaderWriterLock();
         }
+
+        public int Difficulty => m_difficulty;
 
         public async ValueTask<Block> GetBlock(string blockId)
         {
@@ -127,14 +132,15 @@ namespace Obelisco
 
         public Block GetGenesis()
         {
-            var now = DateTimeOffset.Now.ToUnixTimeSeconds();
+            var now = 0;
             var block = new Block()
             {
                 Version = 1,
                 Timestamp = now,
-                Transactions = new List<CompleteTransaction>(),
+                Transactions = new List<Transaction>(),
                 Validator = "=",
-                PreviousHash = null!
+                PreviousHash = null!,
+                Difficulty = 0
             };
             block.Hash = block.CalculateHash();
 
@@ -162,14 +168,9 @@ namespace Obelisco
 
         public async ValueTask<IEnumerable<PendingTransaction>> GetPendingTransactions()
         {
-            var count = await m_context.PendingTransactions.CountAsync();
-            count = Math.Max(count - 256, 0);
-            count = Random.Next(count);
-
-            return await m_context.PendingTransactions
-                .Skip(count)
-                .TakeWhile((t, i) => i <= 256)
-                .ToListAsync();
+            return m_context.PendingTransactions
+                .ToList()
+                .TakeWhile((t, i) => i < 256);
         }
     }
 }

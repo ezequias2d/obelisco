@@ -29,7 +29,7 @@ namespace Obelisco
             ILoggerFactory loggerFactory,
             IEnumerable<string> supportedSubProtocols,
             Blockchain blockchain) 
-            : base(socketClientFactory, loggerFactory.CreateLogger<Client>(), new ConcurrentDictionary<Uri, (P2P, Task)>())
+            : base(socketClientFactory, loggerFactory.CreateLogger<Client>(), new ConcurrentDictionary<Uri, (P2PClient, Task)>())
         {
             m_logger = loggerFactory.CreateLogger<P2PServer>();
             m_blockchain = blockchain;
@@ -41,6 +41,7 @@ namespace Obelisco
 
         public EndPoint LocalEndpoint => m_listener.LocalEndpoint;
         public int Port { get; private set; }
+        
 
         public void Listen(int port, CancellationToken cancellationToken)
         {
@@ -91,6 +92,11 @@ namespace Obelisco
                                 }
                                 m_logger.LogInformation("Server: Connection closed"); 
                             }, cancellationToken);
+
+                            await OnConnected(p2p);
+
+                            var uri = new Uri(tcpClient.Client.RemoteEndPoint.ToString());
+                            m_connections[uri] = (p2p, task);
                         }
                         else
                         {
@@ -153,7 +159,7 @@ namespace Obelisco
 
                 m_logger.LogInformation("Web Server disposed");
             }
-            Dispose(disposing);
+            base.Dispose(disposing);
         }
     }
 }

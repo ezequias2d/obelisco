@@ -10,10 +10,39 @@ namespace Obelisco
 {
     public class P2PClient : P2P
     {
+        private const int REF_SERVERS = 10;
         private readonly Client m_client;
+        private event EventHandler<PostServersRequest> m_postServers; 
         public P2PClient(Client client, ILogger logger, WebSocket socket, Guid id) : base(logger, socket, id)
         {
             m_client = client;
+            Servers += OnServers;
+        }
+
+        public event EventHandler<PostServersRequest> Servers 
+        {
+             add => m_postServers += value; 
+             remove => m_postServers -= value;
+        }
+
+        private void OnServers(object sender, PostServersRequest e)
+        {
+            var servers = m_client.Servers;
+            var count = servers.Length;
+            if (count < REF_SERVERS)
+            {
+                var task = Task.WhenAll(ConnectServers(servers.Select(u => u.ToString()), e.Servers, CancellationToken.None));
+                task.Wait();
+            }
+        }
+
+        private IEnumerable<Task> ConnectServers(IEnumerable<string> currentServers, IEnumerable<string> newServers, CancellationToken cancellationToken)
+        {
+            foreach (var server in newServers)
+            {
+                if (!currentServers.Contains(server) && Uri.TryCreate(server, UriKind.Absolute, out var uri))
+                    yield return m_client.Connect(uri, cancellationToken).AsTask();
+            }
         }
 
         protected override async ValueTask OnMessage(Message? message, CancellationToken cancellationToken)
@@ -23,9 +52,24 @@ namespace Obelisco
                 case GetServersRequest _:
                     await GetServersResponse(cancellationToken);
                     break;
+                case PostServersRequest m:
+                    m_postServers?.Invoke(this, m);
+                    break;
                 default:
                     await base.OnMessage(message, cancellationToken);
                     break;
+            }
+        }
+
+        protected override async ValueTask GetNodeTypeResponse(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await SendResponse(new NodeTypeResponse() { IsFullNode = false }, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                await SendResponse<NodeTypeResponse>(null, cancellationToken, ex.Message);
             }
         }
 
@@ -72,6 +116,12 @@ namespace Obelisco
             return WaitResponse<BlockResponse>(cancellationToken).Block;
         }
 
+        public async ValueTask<IEnumerable<PendingTransaction>> GetPendingTransaction(CancellationToken cancellationToken)
+        {
+            await SendMessage(new GetPendingTransactionsRequest(), cancellationToken);
+            return WaitResponse<PendingTransactionsResponse>(cancellationToken).Transactions;
+        }
+
         public async ValueTask PostBlock(Block block, CancellationToken cancellationToken)
         {
             await SendMessage(new PostBlockRequest() { Block = block }, cancellationToken);
@@ -82,6 +132,18 @@ namespace Obelisco
         {
             await SendMessage(new PostTransactionRequest() { Transaction = new PendingTransaction(transaction) }, cancellationToken);
             WaitResponse<Response>(cancellationToken);
+        }
+
+        public async ValueTask PostServers(IEnumerable<string> servers, CancellationToken cancellationToken)
+        {
+            await SendMessage(new PostServersRequest() { Servers = servers }, cancellationToken);
+            WaitResponse<Response>(cancellationToken);
+        }
+
+        public async ValueTask<int> GetDifficulty(CancellationToken cancellationToken)
+        {
+            await SendMessage(new GetDifficultyRequest(), cancellationToken);
+            return WaitResponse<DifficultyReponse>(cancellationToken).Difficulty;
         }
     }
 }

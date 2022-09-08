@@ -5,6 +5,8 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace Obelisco
 {
@@ -26,7 +28,7 @@ namespace Obelisco
         public long Timestamp { get; set; }
 
         [Required]
-        public virtual IList<CompleteTransaction> Transactions { get; set; } = null!;
+        public virtual IList<Transaction> Transactions { get; set; } = null!;
 
         [Required]
         public string Validator { get; set; } = null!;
@@ -42,9 +44,11 @@ namespace Obelisco
         [ForeignKey("Previous")]
         public string? PreviousHash { get; set; }
 
+        [JsonIgnore]
         public virtual Block? Previous { get; set; }
 
         [InverseProperty("Previous")]
+        [JsonIgnore]
         public virtual Block? Next { get; set; }
 
         public bool IsValid(int difficulty)
@@ -72,13 +76,15 @@ namespace Obelisco
             return count >= difficulty;
         }
 
-        public void Mine(int difficulty)
+        public bool TryMine(int difficulty, CancellationToken cancellationToken)
         {
+            Hash = CalculateHash();
             while (Hash == null || !Check(Hash, difficulty))
             {
                 Nonce++;
                 Hash = CalculateHash();
             }
+            return true;
         }
 
         private Stream GetData() 

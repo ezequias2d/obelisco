@@ -24,6 +24,21 @@ namespace Obelisco
     {
         public IEnumerable<string> Servers { get; set; } = Enumerable.Empty<string>();
     }
+
+    public class NodeTypeResponse : Response
+    {
+        public bool IsFullNode { get; set; }
+    }
+
+    public class PendingTransactionsResponse : Response
+    {
+        public IEnumerable<PendingTransaction> Transactions { get; set; } = null!;
+    }
+
+    public class DifficultyReponse : Response
+    {
+        public int Difficulty { get; set; } = 2;
+    }
 #endregion
 
 #region Request message
@@ -47,11 +62,20 @@ namespace Obelisco
         public Block Block { get; set; } = null!;
     }
 
+    public class GetPendingTransactionsRequest : Request { }
     public class PostTransactionRequest : Request
     {
         public PendingTransaction Transaction { get; set; } = null!;
     }
 
     public class GetServersRequest : Request { }
+
+    public class PostServersRequest : Request 
+    {
+        public IEnumerable<string> Servers { get; set; } = Enumerable.Empty<string>();
+    }
+
+    public class GetNodeTypeRequest : Request { }
+    public class GetDifficultyRequest : Request { }
 #endregion
 }

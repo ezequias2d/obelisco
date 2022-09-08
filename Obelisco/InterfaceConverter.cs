@@ -23,7 +23,7 @@ namespace Obelisco
             }
 
             string propertyName = readerClone.GetString() ?? string.Empty;
-            if (propertyName != "$type")
+            if (propertyName != "type")
             {
                 throw new JsonException();
             }
@@ -32,11 +32,11 @@ namespace Obelisco
             if (readerClone.TokenType != JsonTokenType.String)
                 throw new JsonException();
 
-            string typeName = readerClone.GetString()!;
+            string typeName = $"Obelisco.{readerClone.GetString()!}";
             Type entityType = Type.GetType(typeName);
 
             if (!typeof(T).IsAssignableFrom(entityType))
-                throw new JsonException();
+                throw new JsonException($"TypeName: {typeName}, target: {typeof(T).AssemblyQualifiedName}");
 
             var deserialized = JsonSerializer.Deserialize(ref reader, entityType, options);
             return (T)deserialized!;

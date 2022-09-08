@@ -5,13 +5,22 @@ using System.IO;
 
 namespace Obelisco
 {
-    public class Transaction
+    public class Transaction : IEquatable<Transaction>
     {
         public Transaction()
         {
             Id = null!;
             Sender = null!;
             Message = null!;
+        }
+
+        public Transaction(PendingTransaction p)
+        {
+            Timestamp = p.Timestamp;
+            Id = p.Id;
+            Sender = p.Sender;
+            Message = p.Message;
+            Fee = p.Fee;
         }
 
         public Transaction(string id, DateTime timestamp, string sender, string message, int fee = 1)
@@ -26,11 +35,25 @@ namespace Obelisco
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
         public string Id { get; set; }
-        
         public long Timestamp { get; set; }
         public string Sender { get; set; }
         public string Message { get; set; }
         public int Fee { get; set; }
+
+        public bool Equals(Transaction other)
+        {
+            return Id == other.Id;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is Transaction other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return Id.GetHashCode();
+        }
 
         public byte[] ToBytes()
         {
@@ -45,5 +68,8 @@ namespace Obelisco
                 return stream.ToArray();
             }
         }
+
+        public static implicit operator Transaction(PendingTransaction d) => new Transaction(d);
+        public static implicit operator PendingTransaction(Transaction d) => new PendingTransaction(d);
     }
 }

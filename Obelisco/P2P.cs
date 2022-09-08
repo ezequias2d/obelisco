@@ -69,16 +69,22 @@ namespace Obelisco
             }
         }
 
+        protected abstract ValueTask GetNodeTypeResponse(CancellationToken cancellationToken);
+
 #region callbacks
         protected virtual async ValueTask OnMessage(Message? message, CancellationToken cancellationToken)
         {
+            await Task.Yield();
             if (message is Response response)
                 m_responses.Add(response);
             else
                 switch (message)
                 {
+                    case GetNodeTypeRequest m:
+                        await GetNodeTypeResponse(cancellationToken);
+                        break;
                     default:
-                        var str = message != null ? JsonSerializer.Serialize(message) : "NULL";
+                        var str = message != null ? JsonSerializer.Serialize<Message>(message) : "NULL";
                         LogError($"Invalid message: {str}");
                         break;
                 }
@@ -115,7 +121,7 @@ namespace Obelisco
                         throw new ResponseErrorException($"Error in response: {t.Message}");
                 }
                 else
-                    m_logger.LogWarning($"Miss response: '{JsonSerializer.Serialize(response)}'.");
+                    m_logger.LogWarning($"Miss response: '{JsonSerializer.Serialize<Message>(response)}'.");
             }
             throw new TimeoutException($"Fail to wait for response. Timeout has been reached({timetout} seconds)");
         }
@@ -135,13 +141,15 @@ namespace Obelisco
         protected async ValueTask SendMessage(Message message, CancellationToken cancellationToken)
         {
             var str = JsonSerializer.Serialize<Message>(message);
+            m_logger.LogInformation($"Message: {message}");
             await Send(str, cancellationToken);
         }
 
         protected async ValueTask SendResponse<TResponse>(TResponse? response, CancellationToken cancellationToken, string? message = null) where TResponse : Response, new()
         {
             response ??= new TResponse() { Ok = false, Message = message ?? string.Empty };
-            var str = JsonSerializer.Serialize(response);
+            var str = JsonSerializer.Serialize<Message>(response);
+            m_logger.LogInformation($"Response: {message}");
             await Send(str, cancellationToken);
         }
 

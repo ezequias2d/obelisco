@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,13 +39,31 @@ namespace Obelisco
                 case PostTransactionRequest m:
                     await PostTransactionResponse(m.Transaction, cancellationToken);
                     break;
+                case GetPendingTransactionsRequest m:
+                    await GetPendingTransactionsResponse(cancellationToken);
+                    break;
+                case GetDifficultyRequest m:
+                    await GetDifficultyResponse(cancellationToken);
+                    break;
                 default:
                     await base.OnMessage(message, cancellationToken);
                     break;
             }
-        } 
+        }
 
-#region Responses
+        #region Responses
+        protected override async ValueTask GetNodeTypeResponse(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await SendResponse(new NodeTypeResponse() { IsFullNode = true }, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                await SendResponse<NodeTypeResponse>(null, cancellationToken, ex.Message);
+            }
+        }
+
         private async ValueTask GetBlockResponse(string blockId, CancellationToken cancellationToken)
         {
             BlockResponse? response = null;
@@ -113,6 +132,24 @@ namespace Obelisco
             }
         }
 
+        private async ValueTask GetPendingTransactionsResponse(CancellationToken cancellationToken)
+        {
+            try
+            {
+                var transactions = await m_blockchain.GetPendingTransactions();
+
+                foreach (var transaction in transactions)
+                    Console.WriteLine(transaction.Message);
+                Console.WriteLine(transactions.Count());
+
+                await SendResponse(new PendingTransactionsResponse() { Transactions = transactions }, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                await SendResponse<PendingTransactionsResponse>(null, cancellationToken, ex.Message);
+            }
+        }
+
         private async ValueTask PostTransactionResponse(PendingTransaction transaction, CancellationToken cancellationToken)
         {
             try
@@ -123,6 +160,19 @@ namespace Obelisco
             catch (Exception ex)
             {
                 await SendErrorResponse(ex.Message, cancellationToken);
+            }
+        }
+
+        private async ValueTask GetDifficultyResponse(CancellationToken cancellationToken)
+        {
+            try
+            {
+                var difficulty = m_blockchain.Difficulty;
+                await SendResponse(new DifficultyReponse() { Difficulty = difficulty }, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                await SendResponse<DifficultyReponse>(null, cancellationToken, ex.Message);
             }
         }
     #endregion
