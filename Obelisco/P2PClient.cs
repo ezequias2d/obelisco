@@ -160,9 +160,9 @@ namespace Obelisco
             return WaitResponse<DifficultyReponse>(cancellationToken).Difficulty;
         }
 
-        public async ValueTask<Balance> GetBalance(CancellationToken cancellationToken)
+        public async ValueTask<Balance> GetBalance(string owner, CancellationToken cancellationToken)
         {
-            await SendMessage(new GetBalanceRequest(), cancellationToken);
+            await SendMessage(new GetBalanceRequest() { Owner = owner }, cancellationToken);
             return WaitResponse<BalanceResponse>(cancellationToken).Balance;
         }
     }

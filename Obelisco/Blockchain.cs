@@ -147,7 +147,8 @@ namespace Obelisco
 
         public async ValueTask<Balance> GetBalance(string ownerId)
         {
-            return await m_context.Balances.FindAsync(ownerId);
+            var balance = await m_context.Balances.FindAsync(ownerId);
+            return balance ?? new Balance() { Owner = ownerId, Coins = 0 };
         }
 
         public async ValueTask PostTransaction(PendingTransaction transaction)

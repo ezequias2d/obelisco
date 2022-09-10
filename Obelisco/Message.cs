@@ -87,7 +87,10 @@ namespace Obelisco
 
     public class GetNodeTypeRequest : Request { }
     public class GetDifficultyRequest : Request { }
-    public class GetBalanceRequest : Request { }
+    public class GetBalanceRequest : Request 
+    {
+        public string Owner { get; set; } = null!;
+    }
     public class GetServerAddressRequest : Request { }
 #endregion
 }

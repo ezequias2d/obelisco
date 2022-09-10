@@ -45,6 +45,9 @@ namespace Obelisco
                 case GetDifficultyRequest m:
                     await GetDifficultyResponse(cancellationToken);
                     break;
+                case GetBalanceRequest m:
+                    await GetBalanceResponse(m.Owner, cancellationToken);
+                    break;
                 default:
                     await base.OnMessage(message, cancellationToken);
                     break;
@@ -162,6 +165,19 @@ namespace Obelisco
             catch (Exception ex)
             {
                 await SendResponse<DifficultyReponse>(null, cancellationToken, ex.Message);
+            }
+        }
+
+        private async ValueTask GetBalanceResponse(string owner, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var balance = await m_blockchain.GetBalance(owner);
+                await SendResponse(new BalanceResponse() { Balance = balance }, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                await SendResponse<BalanceResponse>(null, cancellationToken, ex.Message);
             }
         }
     #endregion
