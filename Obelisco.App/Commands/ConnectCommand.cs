@@ -24,8 +24,8 @@ namespace Obelisco.Commands
             m_applicationLifetime = applicationLifetime;
             Uri = "ws://127.0.0.1:1234/obelisco";
         }
-
-        [CommandOption("uri", 'u', FallbackVariableName = "localhost:1234/obelisco")]
+        
+        [CommandParameter(0, Description = "The uri of server to connect.")]
         public string Uri { get; set; }
 
         public async ValueTask ExecuteAsync(IConsole console)

@@ -14,7 +14,7 @@ namespace Obelisco.Commands
             m_state = state;
         }
 
-        [CommandOption("validator", 'v', IsRequired = true)]
+        [CommandParameter(0, Description = "The validator address to mine.")]
         public string Validator { get; set; }
 
         public async ValueTask ExecuteAsync(IConsole console)
