@@ -156,7 +156,8 @@ namespace Obelisco
             if (await ValidateTransaction(transaction))
                 throw new InvalidTransactionException("The sender must has coins to send mensage.");
 
-            m_context.PendingTransactions.Add(transaction);
+            await m_context.PendingTransactions.AddAsync(transaction);
+            await m_context.SaveChangesAsync(CancellationToken.None);
         }
 
         private int GetReward(Block block)
