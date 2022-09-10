@@ -155,7 +155,6 @@ namespace Obelisco
                         }
 
                         m_listener.Stop();
-                        m_task?.Wait();
                     }
                 }
                 catch (Exception ex)

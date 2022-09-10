@@ -46,7 +46,10 @@ namespace Obelisco
             {
                 WebSocketReceiveResult result = await m_socket.ReceiveAsync(buffer, cancellationToken);
                 if (result.MessageType == WebSocketMessageType.Close)
-                    OnClose(result.CloseStatus!.Value, result.CloseStatusDescription);
+                {
+                    OnClose(result.CloseStatus!.Value, result.CloseStatusDescription!);
+                    break;
+                }
 
                 if (result.Count > BUFFER_SIZE)
                 {
