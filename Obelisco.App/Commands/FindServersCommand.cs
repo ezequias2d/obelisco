@@ -5,7 +5,7 @@ using Typin.Console;
 
 namespace Obelisco.Commands
 {
-    [Command("find servers", Description = "Create and start the server.")]
+    [Command("find servers", Description = "Find servers and try to connect.")]
     public class FindServersCommand : ICommand
     {
         private readonly ILogger m_logger;
