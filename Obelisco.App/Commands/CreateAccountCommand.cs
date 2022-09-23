@@ -6,7 +6,7 @@ using Typin.Console;
 
 namespace Obelisco.App.Commands;
 
-[Command("create account", Description = "sync")]
+[Command("create account", Description = "Create a account identity.")]
 public class CreateAccountCommand : ICommand
 {
 	private readonly ILogger m_logger;
@@ -37,29 +37,7 @@ public class CreateAccountCommand : ICommand
 		var overwrite = false;
 		if (File.Exists(OutputFile))
 		{
-
-			for (var i = 0; i < 3; i++)
-			{
-				console.BackgroundColor = ConsoleColor.White;
-				console.ForegroundColor = ConsoleColor.Red;
-				console.Output.Write("Do you want to overwrite existing file? [y/N]: ");
-				console.ResetColor();
-				
-				var line = console.Input.ReadLine();
-				if (line == null)
-					continue;
-
-				var yesOptions = new[] { "yes", "y" };
-				var noOptions = new[] { "no", "n" };
-
-				if (yesOptions.Any(s => line.Equals(s, StringComparison.InvariantCultureIgnoreCase)))
-				{
-					overwrite = true;
-					break;
-				}
-				else if (noOptions.Any(s => line.Equals(s, StringComparison.InvariantCultureIgnoreCase)))
-					break;
-			}
+			overwrite = console.ConfirmMessage("Do you want to overwrite existing file?");
 		}
 		else 
 			overwrite = true;
