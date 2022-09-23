@@ -7,15 +7,15 @@ using Typin.Console;
 namespace Obelisco.App.Commands;
 
 [Command("create account", Description = "sync")]
-public class CreateAccount : ICommand
+public class CreateAccountCommand : ICommand
 {
 	private readonly ILogger m_logger;
 	private readonly ICliApplicationLifetime m_applicationLifetime;
 	private readonly State m_state;
 
-	public CreateAccount(
+	public CreateAccountCommand(
 		State state,
-		ILogger<CreateAccount> logger,
+		ILogger<CreateAccountCommand> logger,
 		ICliApplicationLifetime applicationLifetime)
 	{
 		m_applicationLifetime = applicationLifetime;
