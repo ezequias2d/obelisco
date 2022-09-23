@@ -26,7 +26,7 @@ public class PostBlockRequest : Request
 public class GetPendingTransactionsRequest : Request { }
 public class PostTransactionRequest : Request
 {
-	public PendingTransaction Transaction { get; set; } = null!;
+	public Transaction Transaction { get; set; } = null!;
 }
 
 public class GetServersRequest : Request { }

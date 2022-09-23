@@ -130,7 +130,7 @@ public class P2PClient : P2P
         return WaitResponse<BlockResponse>(cancellationToken).Block;
     }
 
-    public async ValueTask<IEnumerable<PendingTransaction>> GetPendingTransaction(CancellationToken cancellationToken)
+    public async ValueTask<IEnumerable<Transaction>> GetPendingTransaction(CancellationToken cancellationToken)
     {
         await SendMessage(new GetPendingTransactionsRequest(), cancellationToken);
         return WaitResponse<PendingTransactionsResponse>(cancellationToken).Transactions;
@@ -144,7 +144,7 @@ public class P2PClient : P2P
 
     public async ValueTask PostTransaction(Transaction transaction, CancellationToken cancellationToken)
     {
-        await SendMessage(new PostTransactionRequest() { Transaction = new PendingTransaction(transaction) }, cancellationToken);
+        await SendMessage(new PostTransactionRequest() { Transaction = transaction }, cancellationToken);
         WaitResponse<Response>(cancellationToken);
     }
 

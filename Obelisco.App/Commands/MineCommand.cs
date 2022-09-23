@@ -37,7 +37,7 @@ namespace Obelisco.Commands
             {
                 Version = 1,
                 Timestamp = DateTimeOffset.Now.ToUnixTimeSeconds(),
-                Transactions = new List<Transaction>((await transactions).Select(t => new Transaction(t))),
+                Transactions = new List<Transaction>(await transactions),
                 Validator = Validator,
                 Nonce = 0,
                 Difficulty = difficulty,

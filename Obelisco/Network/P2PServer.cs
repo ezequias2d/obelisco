@@ -129,11 +129,6 @@ public class P2PServer : P2PClient
         try
         {
             var transactions = await m_blockchain.GetPendingTransactions();
-
-            foreach (var transaction in transactions)
-                Console.WriteLine(transaction.Message);
-            Console.WriteLine(transactions.Count());
-
             await SendResponse(new PendingTransactionsResponse() { Transactions = transactions }, cancellationToken);
         }
         catch (Exception ex)
@@ -142,7 +137,7 @@ public class P2PServer : P2PClient
         }
     }
 
-    private async ValueTask PostTransactionResponse(PendingTransaction transaction, CancellationToken cancellationToken)
+    private async ValueTask PostTransactionResponse(Transaction transaction, CancellationToken cancellationToken)
     {
         try
         {
