@@ -31,7 +31,7 @@ public class InterfaceConverter<T> : JsonConverter<T>
         if (readerClone.TokenType != JsonTokenType.String)
             throw new JsonException();
 
-        string typeName = $"Obelisco.{readerClone.GetString()!}";
+        string typeName = $"Obelisco.Network.{readerClone.GetString()!}";
         Type entityType = Type.GetType(typeName);
 
         if (!typeof(T).IsAssignableFrom(entityType))
