@@ -168,4 +168,89 @@ public class Server : Client
         }
         base.Dispose(disposing);
     }
+
+    public async ValueTask Sync(CancellationToken cancellationToken)
+    {
+        var ttask = base
+            .GetPendingTransactions(cancellationToken)
+            .AsTask()
+            .ContinueWith<IEnumerable<Transaction>>(t =>
+        {
+            foreach (var transaction in t.Result)
+                m_blockchain.PostTransaction(transaction).AsTask().Wait();
+            return t.Result;
+        });
+
+        var currentLastBlock = await m_blockchain.GetLastBlock(cancellationToken);
+        Block? nextBlock = await base.QueryNextBlock(currentLastBlock.Hash, cancellationToken).AsTask();
+        while (nextBlock != null && currentLastBlock.Hash != nextBlock.Hash)
+        {
+            await m_blockchain.PostBlock(nextBlock);
+            currentLastBlock = nextBlock;
+            nextBlock = await base.QueryNextBlock(currentLastBlock.Hash, cancellationToken).AsTask();
+        }
+
+        await ttask;
+    }
+
+    public override async ValueTask BroadcastTransation(Transaction transaction, CancellationToken cancellationToken)
+    {
+        await m_blockchain.PostTransaction(transaction);
+        await base.BroadcastTransation(transaction, cancellationToken);
+    }
+
+    public override async ValueTask BroadcastBlock(Block block, CancellationToken cancellationToken)
+    {
+        await m_blockchain.PostBlock(block);
+        await base.BroadcastBlock(block, cancellationToken);
+    }
+
+    public override async ValueTask<IEnumerable<Transaction>> GetPendingTransactions(CancellationToken cancellationToken)
+    {
+        var transactions = await m_blockchain.GetPendingTransactions();
+        if (transactions.Count < 128)
+        {
+            var otherTransactions = await base.GetPendingTransactions(cancellationToken);
+
+            await Task.WhenAll(
+                otherTransactions.Select(
+                    t =>
+                    {
+                        t.Pending = true;
+                        return m_blockchain.PostTransaction(t).AsTask();
+                    }
+                )
+            );
+
+            return transactions.Union(otherTransactions);
+        }
+
+        return transactions;
+    }
+
+    public override async ValueTask<Block?> QueryBlock(string blockId, CancellationToken cancellationToken)
+    {
+        return await m_blockchain.GetBlock(blockId);
+    }
+
+    public override async ValueTask<Block?> QueryLastBlock(CancellationToken cancellationToken)
+    {
+        return await m_blockchain.GetLastBlock(cancellationToken);
+    }
+
+    public override async ValueTask<Block?> QueryNextBlock(string blockId, CancellationToken cancellationToken)
+    {
+        return await m_blockchain.GetNextBlock(blockId);
+    }
+
+    public override async ValueTask<int> QueryDifficulty(CancellationToken cancellationToken)
+    {
+        await Task.Yield();
+        return m_blockchain.Difficulty;
+    }
+
+    public override async ValueTask<Balance> QueryBalance(string owner, CancellationToken cancellationToken, IEnumerable<Balance>? balances = null)
+    {
+        return await m_blockchain.GetBalance(owner);
+    }
 }

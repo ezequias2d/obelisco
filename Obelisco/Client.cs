@@ -15,7 +15,7 @@ public class Client : IDisposable
 	private readonly IWebSocketClientFactory m_socketFactory;
 	private readonly ILogger m_logger;
 	protected readonly IDictionary<Uri, (P2PClient p2p, Task Task)> m_connections;
-	private event EventHandler<P2PClient> m_connected;
+	private event EventHandler<P2PClient>? m_connected;
 	private int m_connectionNotifyCount = 0;
 
 	public Client(IWebSocketClientFactory socketFactory, ILogger<Client> logger)
@@ -27,6 +27,7 @@ public class Client : IDisposable
 		m_logger = logger;
 		m_connections = connections;
 		IsFullNode = false;
+		m_connected = null;
 	}
 
 	public event EventHandler<P2PClient> Connected
@@ -68,7 +69,7 @@ public class Client : IDisposable
 		m_connected?.Invoke(this, e);
 	}
 
-	public async ValueTask BroadcastTransation(Transaction transaction, CancellationToken cancellationToken)
+	public virtual async ValueTask BroadcastTransation(Transaction transaction, CancellationToken cancellationToken)
 	{
 		await Task.WhenAll(
 			Connections.Select(
@@ -77,7 +78,7 @@ public class Client : IDisposable
 		);
 	}
 
-	public async ValueTask BroadcastBlock(Block block, CancellationToken cancellationToken)
+	public virtual async ValueTask BroadcastBlock(Block block, CancellationToken cancellationToken)
 	{
 		await Task.WhenAll(
 			Connections.Select(
@@ -95,7 +96,7 @@ public class Client : IDisposable
 		);
 	}
 
-	public async ValueTask<IEnumerable<Transaction>> GetPendingTransactions(CancellationToken cancellationToken)
+	public virtual async ValueTask<IEnumerable<Transaction>> GetPendingTransactions(CancellationToken cancellationToken)
 	{
 		var result = await Task.WhenAll(
 			Connections.Select(
@@ -105,19 +106,45 @@ public class Client : IDisposable
 
 		return new HashSet<Transaction>(result.SelectMany(l => l)).TakeWhile((_, i) => i < 256);
 	}
-
-	public async ValueTask<Block> QueryNextBlock(string blockId, CancellationToken cancellationToken)
+	
+	public virtual async ValueTask<Block?> QueryBlock(string blockId, CancellationToken cancellationToken)
 	{
-		var result = await Task.WhenAll(
-			Connections.Select(
-				p2p => p2p.GetNextBlock(blockId, cancellationToken).AsTask()
-			)
-		);
-
-		return result.GroupBy(b => b).OrderByDescending(g => g.Count()).Select(g => g.Key).First();
+		return await Query(p2p => p2p.GetBlock(blockId, cancellationToken).AsTask(), "The block is the last.");
+	}
+	
+	public virtual async ValueTask<Block?> QueryLastBlock(CancellationToken cancellationToken) 
+	{
+		return await Query(p2p => p2p.GetLastBlock(cancellationToken).AsTask(), "The block dont exist.");
 	}
 
-	public async ValueTask<Balance> QueryBalance(string owner, CancellationToken cancellationToken)
+	public virtual async ValueTask<Block?> QueryNextBlock(string blockId, CancellationToken cancellationToken)
+	{
+		return await Query(p2p => p2p.GetNextBlock(blockId, cancellationToken).AsTask(), "The block is the last.");
+	}
+	
+	public virtual async ValueTask<int> QueryDifficulty(CancellationToken cancellationToken) 
+	{
+		return await Query(p2p => p2p.GetDifficulty(cancellationToken).AsTask(), "QueryDifficulty Fails.");
+	}
+	
+	private async ValueTask<T?> Query<T>(Func<P2PClient, Task<T>> selector, string errorMessage) 
+	{
+		var result = await Task.WhenAll(Connections.Select(selector));
+		try 
+		{
+			return result
+				.GroupBy(b => b)
+				.OrderByDescending(g => g.Count())
+				.Select(g => g.Key)
+				.FirstOrDefault();
+		}
+		catch
+		{
+			throw new ArgumentOutOfRangeException(errorMessage);
+		}
+	}
+
+	public virtual async ValueTask<Balance> QueryBalance(string owner, CancellationToken cancellationToken, IEnumerable<Balance>? balances = null)
 	{
 		var result = await Task.WhenAll(
 			Connections.Select(
@@ -125,7 +152,19 @@ public class Client : IDisposable
 			)
 		);
 
-		return result.GroupBy(b => b).OrderByDescending(g => g.Count()).Select(g => g.Key).First();
+		if (balances != null)
+			return result
+				.Union(balances)
+				.GroupBy(b => b)
+				.OrderByDescending(g => g.Count())
+				.Select(g => g.Key)
+				.FirstOrDefault(new Balance(owner));
+
+		return result
+			.GroupBy(b => b)
+			.OrderByDescending(g => g.Count())
+			.Select(g => g.Key)
+			.FirstOrDefault(new Balance(owner));
 	}
 
 	public void Dispose()

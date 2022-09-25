@@ -32,7 +32,7 @@ public class InterfaceConverter<T> : JsonConverter<T>
             throw new JsonException();
 
         string typeName = $"Obelisco.Network.{readerClone.GetString()!}";
-        Type entityType = Type.GetType(typeName);
+        Type entityType = Type.GetType(typeName) ?? throw new JsonException($"Fail to find type {typeName}");
 
         if (!typeof(T).IsAssignableFrom(entityType))
             throw new JsonException($"TypeName: {typeName}, target: {typeof(T).AssemblyQualifiedName}");

@@ -34,6 +34,8 @@ public class TransactionConverter: JsonConverter<Transaction>
 		Type entityType = typeName switch 
 		{
 			"poll" => typeof(PollTransaction),
+			"vote" => typeof(VoteTransaction),
+			_ => throw new NotImplementedException(),
 			// TODO: Add others.	
 		};
 
@@ -60,7 +62,9 @@ public class TransactionConverter: JsonConverter<Transaction>
 					var typeName = value switch 
 					{
 						PollTransaction => "poll",
+						VoteTransaction => "vote",
 						// TODO: Add others.
+						_ => throw new NotImplementedException()
 					};
 					
 					writer.WriteString("type", typeName);

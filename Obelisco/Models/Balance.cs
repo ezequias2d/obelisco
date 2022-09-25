@@ -8,11 +8,29 @@ namespace Obelisco;
 
 public class Balance : IEquatable<Balance>
 {
+    public Balance()
+    {
+
+    }
+
+    public Balance(string owner)
+    {
+        Owner = owner;
+        Coins = 0;
+        Nonce = 0;
+        Polls = new List<PollTransaction>();
+        Tickets = new List<Ticket>();
+    }
+
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
-    public string Owner { get; set; } = null!;
+    public string Owner { get; set; } = string.Empty;
     public int Coins { get; set; }
-    public virtual ICollection<PollTransaction> Polls { get; set; }
+    public int Nonce { get; set; }
+    public virtual IList<Ticket> Tickets { get; set; } = new List<Ticket>();
+
+    [NotMapped]
+    public virtual IList<PollTransaction> Polls { get; set; } = new List<PollTransaction>();
 
     public bool Equals(Balance? other)
     {

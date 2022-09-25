@@ -15,23 +15,42 @@ namespace Obelisco.Commands
         }
 
         [CommandParameter(0, Description = "The validator address to mine.")]
-        public string Validator { get; set; }
+        public string Validator { get; set; } = null!;
 
         public async ValueTask ExecuteAsync(IConsole console)
         {
-            if (m_state.Client == null)
-                throw new InvalidOperationException();
+            if (!m_state.TryGetClient(console, out var client))
+                return;
 
             var token = console.GetCancellationToken();
-            var transactions = m_state.Client.GetPendingTransactions(token);
-            var last = await m_state.Client.Connections.First().GetLastBlock(token);
+            var transactions = client.GetPendingTransactions(token);
+            var last = await client.QueryLastBlock(token);
 
-            var difficulty = m_state.Client.Connections.Select(p2p => 
+            if (last == null)
             {
-                var task = p2p.GetDifficulty(token).AsTask();
-                task.Wait();
-                return task.Result;
-            }).GroupBy(n => n).OrderByDescending(g => g.Count()).Select(g => g.Key).FirstOrDefault(2);
+                await console.Error.WriteLineAsync("Fail to retrieves the last block.");
+                return;
+            }
+
+            var difficulty = await client.QueryDifficulty(token);
+
+            var pollTransactions = new List<PollTransaction>();
+            var voteTransactions = new List<VoteTransaction>();
+
+            foreach (var transaction in await transactions)
+            {
+                switch (transaction)
+                {
+                    case PollTransaction pt:
+                        pollTransactions.Add(pt);
+                        break;
+                    case VoteTransaction vt:
+                        voteTransactions.Add(vt);
+                        break;
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
 
             var block = new Block()
             {
@@ -46,7 +65,7 @@ namespace Obelisco.Commands
 
             if (block.TryMine(difficulty, token))
             {
-                await m_state.Client.BroadcastBlock(block, token);
+                await client.BroadcastBlock(block, token);
                 console.Output.WriteLine("You mine a block!");
             }
             else

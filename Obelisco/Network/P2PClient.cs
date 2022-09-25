@@ -12,11 +12,12 @@ public class P2PClient : P2P
 {
 	private const int REF_SERVERS = 10;
 	private readonly Client m_client;
-	private event EventHandler<PostServersRequest> m_postServers;
+	private event EventHandler<PostServersRequest>? m_postServers;
 	public P2PClient(Client client, ILogger logger, WebSocket socket, Guid id) : base(logger, socket, id)
 	{
 		m_client = client;
 		Servers += OnServers;
+		m_postServers = null;
 	}
 
 	public event EventHandler<PostServersRequest> Servers
@@ -25,7 +26,7 @@ public class P2PClient : P2P
 		remove => m_postServers -= value;
 	}
 
-	private void OnServers(object sender, PostServersRequest e)
+	private void OnServers(object? sender, PostServersRequest e)
 	{
 		var servers = m_client.Servers;
 		var count = servers.Length;

@@ -2,33 +2,30 @@ using Microsoft.Extensions.Logging;
 using Typin;
 using Typin.Attributes;
 using Typin.Console;
-using Ninja.WebSockets;
 
 namespace Obelisco.Commands
 {
-    [Command("send", Description = "send message")]
-    public class SendCommand : ICommand
+    [Command("sync", Description = "sync")]
+    public class SyncCommand : ICommand
     {
         private readonly ILogger m_logger;
-        private readonly BlockchainContext m_context;
         private readonly ICliApplicationLifetime m_applicationLifetime;
+        private readonly State m_state;
 
-        public SendCommand(
-            BlockchainContext context, 
-            ILogger<QuitCommand> logger, 
+        public SyncCommand(
+            State state,
+            ILogger<QuitCommand> logger,
             ICliApplicationLifetime applicationLifetime)
         {
             m_applicationLifetime = applicationLifetime;
             m_logger = logger;
-            m_context = context;
+            m_state = state;
         }
 
         public async ValueTask ExecuteAsync(IConsole console)
         {
-            await m_context.SaveChangesAsync();
-            
-
-            m_applicationLifetime.RequestStop();
+            // TODO
+            await console.Error.WriteLineAsync("TODO!");
         }
     }
 }

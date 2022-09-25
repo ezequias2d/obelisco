@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using Typin;
 using Typin.Attributes;
 using Typin.Console;
-using Typin.Schemas;
 using Typin.Modes;
 using Ninja.WebSockets;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +11,6 @@ namespace Obelisco.Commands
     [Command(Description = "Create and start the server or client.")]
     public class DefaultCommand : ICommand
     {
-        private readonly ILogger m_logger;
         private readonly IEnumerable<string> SupportedSubProtocols = new string[] { "obelisco" };
         private readonly ICliApplicationLifetime m_applicationLifetime;
         private readonly ILoggerFactory m_loggerFactory;
@@ -26,7 +24,6 @@ namespace Obelisco.Commands
         {
             m_loggerFactory = loggerFactory;
             m_state = state;
-            m_logger = loggerFactory.CreateLogger<DefaultCommand>();
             m_applicationLifetime = applicationLifetime;
             m_serviceProvider = serviceProvider;
         }
@@ -41,9 +38,6 @@ namespace Obelisco.Commands
         {
             await Task.Yield();
 
-            if (m_state.Client != null || m_state.Server != null)
-                throw new InvalidOperationException();
-
             m_applicationLifetime.RequestMode<InteractiveMode>();
             if (Server)
             {
@@ -51,12 +45,13 @@ namespace Obelisco.Commands
                 var socketClientFactory = m_serviceProvider.GetRequiredService<IWebSocketClientFactory>();
                 var blockchain = m_serviceProvider.GetRequiredService<Blockchain>();
 
-                m_state.Server = new Server(socketServerFactory, socketClientFactory, m_loggerFactory, SupportedSubProtocols, blockchain);
-                m_state.Client = m_state.Server;
+                var server = new Server(socketServerFactory, socketClientFactory, m_loggerFactory, SupportedSubProtocols, blockchain);
+                m_state.Server = server;
+                m_state.Client = server;
 
-                m_state.Server.Listen(Port, CancellationToken.None);
+                server.Listen(Port, CancellationToken.None);
 
-                var str = $"Listening on {m_state.Server.LocalEndpoint}";
+                var str = $"Listening on {server.LocalEndpoint}";
                 console.Output.WriteLine(str);
                 console.Output.WriteLine("Use 'server quit' to exit."); // TODO
             }

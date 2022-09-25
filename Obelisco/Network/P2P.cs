@@ -23,6 +23,7 @@ public abstract class P2P : IDisposable
 		m_logger = logger;
 		m_socket = socket;
 		m_responses = new BlockingCollection<Response>();
+		m_isDisposed = false;
 	}
 
 	public bool IsDisposed => m_isDisposed;
@@ -59,7 +60,7 @@ public abstract class P2P : IDisposable
 				break;
 			}
 
-			var str = Encoding.UTF8.GetString(buffer.Array, 0, result.Count);
+			var str = Encoding.UTF8.GetString(buffer.Array!, 0, result.Count);
 			m_logger.LogInformation($"Receive: {str}");
 
 			Message? message = JsonSerializer.Deserialize<Message>(str);
@@ -76,6 +77,9 @@ public abstract class P2P : IDisposable
 
 	protected void Dispose(bool disposing)
 	{
+		if (m_isDisposed)
+			return;
+		m_isDisposed = true;
 		if (disposing)
 		{
 			var close = m_socket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
@@ -173,7 +177,7 @@ public abstract class P2P : IDisposable
 	protected TResponse WaitResponse<TResponse>(CancellationToken cancellationToken) where TResponse : Response
 	{
 		const int timetout = 30;
-		Response response;
+		Response? response;
 		while (m_responses.TryTake(out response, 1000 * timetout, cancellationToken))
 		{
 			if (response is TResponse t)

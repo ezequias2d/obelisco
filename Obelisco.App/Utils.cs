@@ -1,4 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
+using System.Text;
 using Typin.Console;
 
 namespace Obelisco.App;
@@ -48,5 +50,38 @@ public static class Utils
 		
 		result = default;
 		return false;
+	}
+	
+	public static bool ReadString(this IConsole console, string message, [NotNullWhen(true)]out string? result) 
+	{
+		return console.Read(message, (str) => 
+		{
+			var result = console.ConfirmMessage("Are you sure?");
+			return (result, str);
+		}, out result);
+	}
+	
+	public static bool Login(this IConsole console, string password, string keyFile, [NotNullWhen(true)] out Account? account)
+	{
+		account = null;
+		if (!File.Exists(keyFile))
+		{
+			console.Error.WriteLine("The account private key file don't exist.");
+			return false;
+		}
+		
+		var privateKey = File.ReadAllBytes(keyFile);
+		var passwordBytes = Encoding.UTF8.GetBytes(password);
+		
+		try 
+		{
+			account = new Account(privateKey, passwordBytes);
+			return true;
+		}
+		catch (CryptographicException ex) 
+		{
+			console.Error.WriteLine(ex);
+			return false;
+		}
 	}
 }

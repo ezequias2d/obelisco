@@ -3,103 +3,108 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.IO;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
 
 namespace Obelisco;
 
 public abstract class Transaction : IEquatable<Transaction>
 {
-	public Transaction()
-	{
+    public Transaction()
+    {
 
-	}
+    }
 
-	public Transaction(DateTimeOffset timestamp)
-	{
-		Timestamp = timestamp.ToUnixTimeSeconds();
-		Sender = string.Empty;
-		Signature = string.Empty;
-		Nonce = 0;
-	}
+    public Transaction(long nonce, DateTimeOffset timestamp)
+    {
+        Timestamp = timestamp.ToUnixTimeSeconds();
+        Sender = string.Empty;
+        Signature = string.Empty;
+        Nonce = nonce;
+    }
 
-	[Key]
-	[DatabaseGenerated(DatabaseGeneratedOption.None)]
-	public string Signature { get; set; }
-	public long Nonce { get; set; }
-	public long Timestamp { get; set; }
-	public string Sender { get; set; }
-	public int Index { get; set; }
-	
-	[JsonIgnore]
-	public bool Pending { get; set; }
-	
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public string Signature { get; set; } = string.Empty;
+    public long Nonce { get; set; }
+    public long Timestamp { get; set; }
+    public string Sender { get; set; } = string.Empty;
+    public int Index { get; set; }
 
-	public virtual bool Equals(Transaction other)
-	{
-		return Signature == other.Signature && 
-			Nonce == other.Nonce &&
-			Timestamp == other.Timestamp &&
-			Sender == other.Sender &&
-			Index == other.Index;
-	}
+    [JsonIgnore]
+    public bool Pending { get; set; }
 
-	public override bool Equals(object obj)
-	{
-		return obj is Transaction other && Equals(other);
-	}
 
-	public override int GetHashCode()
-	{
-		return Signature.GetHashCode();
-	}
+    public virtual bool Equals(Transaction? other)
+    {
+        return other != null &&
+            Signature == other.Signature &&
+            Nonce == other.Nonce &&
+            Timestamp == other.Timestamp &&
+            Sender == other.Sender &&
+            Index == other.Index;
+    }
 
-	public byte[] ToBytes()
-	{
-		using (var stream = new MemoryStream())
-		using (var writer = new BinaryWriter(stream))
-		{
-			writer.Write(Nonce);
-			writer.Write(Timestamp);
-			writer.Write(Convert.FromBase64String(Sender));
-			WriteContent(stream);
+    public override bool Equals(object? obj)
+    {
+        return obj != null && obj is Transaction other && Equals(other);
+    }
 
-			return stream.ToArray();
-		}
-	}
+    public override int GetHashCode()
+    {
+        return Signature.GetHashCode();
+    }
 
-	protected abstract void WriteContent(Stream stream);
+    public byte[] ToBytes()
+    {
+        using (var stream = new MemoryStream())
+        using (var writer = new BinaryWriter(stream))
+        {
+            writer.Write(Nonce);
+            writer.Write(Timestamp);
+            writer.Write(Convert.FromBase64String(Sender));
+            WriteContent(stream);
 
-	public void Sign(Account account)
-	{
-		Sender = Convert.ToBase64String(account.PublicKey);
-		var data = ToBytes();
-		var signature = account.SignData(data);
-		Signature = Convert.ToBase64String(signature);
-	}
+            return stream.ToArray();
+        }
+    }
 
-	public bool IsSigned
-	{
-		get
-		{
-			if (Sender == null || Signature == null)
-				return false;
+    protected abstract void WriteContent(Stream stream);
 
-			byte[] publicKey;
-			byte[] signature;
+    public void Sign(Account account)
+    {
+        Sender = Convert.ToBase64String(account.PublicKey);
+        var data = ToBytes();
+        var signature = account.SignData(data);
+        Signature = Convert.ToBase64String(signature);
+    }
 
-			try
-			{
-				publicKey = Convert.FromBase64String(Sender);
-				signature = Convert.FromBase64String(Signature);
+    public bool IsSigned
+    {
+        get
+        {
+            if (Sender == null || Signature == null)
+                return false;
 
-			}
-			catch (FormatException)
-			{
-				return false;
-			}
+            byte[] publicKey;
+            byte[] signature;
 
-			var account = new Account(publicKey);
-			var data = ToBytes();
-			return account.VerifyData(data, signature);
-		}
-	}
+            try
+            {
+                publicKey = Convert.FromBase64String(Sender);
+                signature = Convert.FromBase64String(Signature);
+
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
+
+            var account = new Account(publicKey);
+            var data = ToBytes();
+            return account.VerifyData(data, signature);
+        }
+    }
+    public abstract bool Validate(BlockchainContext context, ILogger? logger = null);
+
+    public abstract bool Consume(BlockchainContext context);
 }
