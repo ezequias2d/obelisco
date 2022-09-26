@@ -8,27 +8,30 @@ namespace Obelisco;
 
 public class PollOption : IEquatable<PollOption>
 {
-	[JsonIgnore, Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int Id { get; set; }
-	public int Index { get; set; }
-	public string Title { get; set; } = null!;
-	public string Description { get; set; } = null!;
-	
-	[JsonIgnore]
-	public virtual PollOptionBalance Balance { get; set; } = null!;
-	
-	[JsonIgnore]
-	public virtual PollTransaction Poll { get; set; } = null!;
+    [JsonIgnore, Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public int Id { get; set; }
+    public int Index { get; set; }
+    public string Title { get; set; } = null!;
+    public string Description { get; set; } = null!;
 
-	public bool Equals(PollOption? other)
-	{
-		return other != null && Title == other.Title && Description == other.Description;
-	}
+    [JsonIgnore]
+    public virtual PollOptionBalance Balance { get; set; } = null!;
 
-	public override bool Equals(object? obj)
-	{
-		return obj is PollOption other && Equals(other);
-	}
+    [JsonIgnore]
+    public virtual string PollId { get; set; }
+
+    [JsonIgnore]
+    public virtual PollTransaction Poll { get; set; }
+
+    public bool Equals(PollOption? other)
+    {
+        return other != null && Title == other.Title && Description == other.Description;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is PollOption other && Equals(other);
+    }
 
     public override int GetHashCode()
     {

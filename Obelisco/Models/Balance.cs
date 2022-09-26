@@ -19,15 +19,21 @@ public class Balance : IEquatable<Balance>
         Coins = 0;
         Nonce = 0;
         Polls = new List<PollTransaction>();
-        Tickets = new List<Ticket>();
+        UnusedTickets = new List<TicketTransaction>();
+        UsedTickets = new List<TicketTransaction>();
     }
 
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public string Owner { get; set; } = string.Empty;
     public int Coins { get; set; }
-    public int Nonce { get; set; }
-    public virtual IList<Ticket> Tickets { get; set; } = new List<Ticket>();
+    public long Nonce { get; set; }
+
+    [NotMapped]
+    public virtual IList<TicketTransaction> UnusedTickets { get; set; } = new List<TicketTransaction>();
+
+    [NotMapped]
+    public virtual IList<TicketTransaction> UsedTickets { get; set; } = new List<TicketTransaction>();
 
     [NotMapped]
     public virtual IList<PollTransaction> Polls { get; set; } = new List<PollTransaction>();

@@ -4,15 +4,26 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Obelisco;
 
 public class PollTransaction : Transaction, IEquatable<PollTransaction>
 {
 	public const int Cost = 10;
+
+	private readonly ILazyLoader m_loader;
+	private IList<PollOption> m_options = new List<PollOption>();
+
 	public PollTransaction()
 	{
+		Options = new List<PollOption>();
+	}
 
+	public PollTransaction(ILazyLoader loader)
+	{
+		m_loader = loader;
 	}
 
 	public PollTransaction(long nonce, DateTimeOffset timestamp, string title, string description, PollOption[] options) : base(nonce, timestamp)
@@ -20,7 +31,7 @@ public class PollTransaction : Transaction, IEquatable<PollTransaction>
 		Title = title;
 		Description = description;
 		Options = options;
-		
+
 		// set indexes
 		for (var i = 0; i < options.Length; i++)
 			options[i].Index = i;
@@ -28,7 +39,12 @@ public class PollTransaction : Transaction, IEquatable<PollTransaction>
 
 	public string Title { get; set; } = string.Empty;
 	public string Description { get; set; } = string.Empty;
-	public virtual IList<PollOption> Options { get; set; } = new List<PollOption>();
+
+	public virtual IList<PollOption> Options 
+	{
+		get => m_loader.Load(this, ref m_options);
+		set => m_options = value;
+	}
 
 	public bool Equals(PollTransaction? other)
 	{
@@ -37,8 +53,8 @@ public class PollTransaction : Transaction, IEquatable<PollTransaction>
 			Description == other.Description &&
 			Options.SequenceEqual(other.Options);
 	}
-	
-	public override bool Equals(Transaction? transaction) 
+
+	public override bool Equals(Transaction? transaction)
 	{
 		return transaction != null && transaction is PollTransaction pt && Equals(pt);
 	}
@@ -65,18 +81,18 @@ public class PollTransaction : Transaction, IEquatable<PollTransaction>
 			logger?.LogInformation("[PollTransition was created by someone without a balance.]");
 			return false;
 		}
-		
+
 		if (balance.Coins < Cost)
 			return false;
 		return true;
 	}
-	
-	public override bool Consume(BlockchainContext context) 
+
+	public override bool Consume(BlockchainContext context)
 	{
 		var balance = context.Balances.Find(Sender);
 		if (balance == null)
 			return false;
-			
+
 		if (balance.Coins >= Cost)
 		{
 			balance.Coins -= Cost;

@@ -17,6 +17,7 @@ public class BlockchainContext : DbContext
     public DbSet<Transaction> Transactions { get; set; } = null!;
     public DbSet<PollTransaction> PollTransactions { get; set; } = null!;
     public DbSet<VoteTransaction> VoteTransactions { get; set; } = null!;
+    public DbSet<TicketTransaction> TicketTransactions { get; set; } = null!;
     public DbSet<PollOption> PollOptions { get; set; } = null!;
 
     public Transaction? FindTransaction(Transaction transaction)
@@ -72,7 +73,9 @@ public class BlockchainContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Ticket>().HasKey(t => new { t.Owner, t.Poll });
-        base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<PollOption>()
+            .HasOne<PollTransaction>(op => op.Poll)
+            .WithMany(pl => pl.Options)
+            .HasForeignKey(op => op.PollId);
     }
 }
