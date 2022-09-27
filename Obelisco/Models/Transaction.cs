@@ -22,6 +22,16 @@ public abstract class Transaction : IEquatable<Transaction>
         Nonce = nonce;
     }
 
+    public Transaction(Transaction transaction)
+    {
+        Signature = transaction.Signature;
+        Nonce = transaction.Nonce;
+        Timestamp = transaction.Timestamp;
+        Sender = transaction.Sender;
+        Index = transaction.Index;
+        Pending = transaction.Pending;
+    }
+
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public string Signature { get; set; } = string.Empty;
@@ -36,12 +46,7 @@ public abstract class Transaction : IEquatable<Transaction>
 
     public virtual bool Equals(Transaction? other)
     {
-        return other != null &&
-            Signature == other.Signature &&
-            Nonce == other.Nonce &&
-            Timestamp == other.Timestamp &&
-            Sender == other.Sender &&
-            Index == other.Index;
+        return other != null && Signature == other.Signature && IsSigned && other.IsSigned;
     }
 
     public override bool Equals(object? obj)
@@ -104,7 +109,6 @@ public abstract class Transaction : IEquatable<Transaction>
             return account.VerifyData(data, signature);
         }
     }
-    public abstract bool Validate(BlockchainContext context, ILogger? logger = null);
 
-    public abstract bool Consume(BlockchainContext context);
+    public abstract bool Consume(Balance balance, BlockchainContext context, ILogger? logger = null);
 }

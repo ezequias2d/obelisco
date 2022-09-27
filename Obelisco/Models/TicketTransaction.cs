@@ -19,6 +19,13 @@ public class TicketTransaction : Transaction
         Poll = poll;
     }
 
+    public TicketTransaction(TicketTransaction transaction) : base(transaction)
+    {
+        Owner = transaction.Owner;
+        Poll = transaction.Poll;
+        Used = transaction.Used;
+    }
+
     /// <summary>
     /// Ticket receiver.
     /// </summary>
@@ -37,28 +44,7 @@ public class TicketTransaction : Transaction
     [JsonIgnore]
     public bool Used { get; set; } = false;
 
-    public override bool Consume(BlockchainContext context)
-    {
-        var poll = context.PollTransactions.Find(Poll);
-
-        if (poll == null || Sender != poll.Sender)
-            return false;
-
-        var balance = context.Balances.Find(Sender);
-        if (balance == null)
-            return false;
-
-        if (balance.Coins >= Cost)
-        {
-            balance.Coins -= Cost;
-            context.Balances.Update(balance);
-            return true;
-        }
-
-        return false;
-    }
-
-    public override bool Validate(BlockchainContext context, ILogger? logger = null)
+    public override bool Consume(Balance balance, BlockchainContext context, ILogger? logger = null)
     {
         var poll = context.PollTransactions.Find(Poll);
 
@@ -74,10 +60,9 @@ public class TicketTransaction : Transaction
             return false;
         }
 
-        var balance = context.Balances.Find(Sender);
-        if (balance == null)
+        if (balance.Coins < Cost)
         {
-            logger?.LogInformation("[TicketTransaction was created by someone without a balance.]");
+            logger?.LogInformation($"[TicketTransaction you must has {Cost} coin to create a ticket.]");
             return false;
         }
 
@@ -86,6 +71,8 @@ public class TicketTransaction : Transaction
             logger?.LogInformation($"[TicketTransaction you must has {Cost} coin to create a ticket.]");
             return false;
         }
+
+        balance.Coins -= Cost;
 
         return true;
     }

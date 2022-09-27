@@ -43,3 +43,8 @@ public class BalanceResponse : Response
 {
     public Balance Balance { get; set; } = null!;
 }
+
+public class TransactionResponse : Response
+{
+    public Transaction Transaction { get; set; } = null!;
+}

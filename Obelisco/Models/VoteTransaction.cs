@@ -12,9 +12,16 @@ public class VoteTransaction : Transaction
     {
     }
 
-    public VoteTransaction(long nonce, DateTimeOffset timestamp, int option) : base(nonce, timestamp)
+    public VoteTransaction(long nonce, string poll, int option, DateTimeOffset timestamp) : base(nonce, timestamp)
     {
+        Poll = poll;
         Option = option;
+    }
+
+    public VoteTransaction(VoteTransaction transaction) : base(transaction)
+    {
+        Poll = transaction.Poll;
+        Option = transaction.Option;
     }
 
     public string Poll { get; set; } = string.Empty;
@@ -31,15 +38,8 @@ public class VoteTransaction : Transaction
         stream.Write(bytes);
     }
 
-    public override bool Validate(BlockchainContext context, ILogger? logger = null)
+    public override bool Consume(Balance balance, BlockchainContext context, ILogger? logger = null)
     {
-        var balance = context.Balances.Find(Sender);
-        if (balance == null)
-        {
-            logger?.LogInformation("[VoteTransition was created by someone without a balance.]");
-            return false;
-        }
-
         foreach (var ticket in balance.UnusedTickets)
         {
             if (ticket.Poll == Poll)
@@ -47,52 +47,31 @@ public class VoteTransaction : Transaction
                 var pollTransaction = context.PollTransactions.Find(Poll);
                 if (pollTransaction == null)
                 {
-                    logger?.LogInformation($"[VoteTransition uses a poll that cannot be retrieved.]");
+                    logger?.LogInformation($"[VoteTransaction uses a poll that cannot be retrieved.]");
                     return false;
                 }
+
+                if (pollTransaction.Pending)
+                {
+                    logger?.LogInformation($"[VoteTransaction uses a poll that is in pending state.]");
+                    return false;
+                }
+
                 PollOption? option = pollTransaction.Options.FirstOrDefault(op => op != null && op.Index == Option, null);
 
                 if (option == null)
                 {
-                    logger?.LogInformation($"[VoteTransition is invalid because option of index {Option} don't exist.]");
+                    logger?.LogInformation($"[VoteTransaction is invalid because option of index {Option} don't exist.]");
                     return false;
                 }
-
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public override bool Consume(BlockchainContext context)
-    {
-        var balance = context.Balances.Find(Sender);
-        if (balance == null)
-            return false;
-
-        foreach (var ticket in balance.UnusedTickets)
-        {
-            if (ticket.Poll == Poll)
-            {
-                var pollTransaction = context.PollTransactions.Find(Poll);
-                if (pollTransaction == null)
-                    return false;
-                PollOption? option = pollTransaction.Options.FirstOrDefault(op => op != null && op.Index == Option, null);
-
-                if (option == null)
-                    return false;
 
                 // consume ticket
+                ticket.Used = true;
                 balance.UnusedTickets.Remove(ticket);
                 balance.UsedTickets.Add(ticket);
 
-                ticket.Used = true;
-
-                context.TicketTransactions.Update(ticket);
-                context.Balances.Update(balance);
                 return true;
             }
-            return true;
         }
         return false;
     }

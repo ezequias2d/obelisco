@@ -21,16 +21,12 @@ namespace Obelisco.Commands
         public async ValueTask ExecuteAsync(IConsole console)
         {
             if (!m_state.TryGetClient(console, out var client))
-            {
-                console.Output.WriteLine("You must init a server or client before connect.");
                 return;
-            }
 
             var token = console.GetCancellationToken();
             var balance = await client.QueryBalance(Owner, token);
 
-            var str = JsonSerializer.Serialize<Balance>(balance, new JsonSerializerOptions() { WriteIndented = true });
-            await console.Output.WriteLineAsync(str);
+            await console.Output.WriteLineAsync(balance.ToString());
         }
     }
 }

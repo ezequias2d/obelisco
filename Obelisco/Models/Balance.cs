@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -38,6 +39,9 @@ public class Balance : IEquatable<Balance>
     [NotMapped]
     public virtual IList<PollTransaction> Polls { get; set; } = new List<PollTransaction>();
 
+    [NotMapped]
+    public virtual IList<IEnumerable<PollOptionBalance>> PollOptionBalances { get; set; } = new List<IEnumerable<PollOptionBalance>>();
+
     public bool Equals(Balance? other)
     {
         return other != null && Owner == other.Owner && Coins == other.Coins;
@@ -55,6 +59,21 @@ public class Balance : IEquatable<Balance>
 
     public override string ToString()
     {
-        return JsonSerializer.Serialize<Balance>(this, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        return JsonSerializer.Serialize<Balance>(this, new JsonSerializerOptions() { WriteIndented = true });
+    }
+
+    public Balance GetSnapshot()
+    {
+        return new(Owner)
+        {
+            Coins = Coins,
+            Nonce = Nonce,
+            UnusedTickets = new List<TicketTransaction>(UnusedTickets.Select(t => new TicketTransaction(t))),
+            UsedTickets = new List<TicketTransaction>(UsedTickets.Select(t => new TicketTransaction(t))),
+            Polls = new List<PollTransaction>(Polls.Select(t => new PollTransaction(t))),
+            PollOptionBalances = new List<IEnumerable<PollOptionBalance>>(
+                    Polls.Select(t => t.Options.Select(b => new PollOptionBalance(b.Balance)))
+                )
+        };
     }
 }

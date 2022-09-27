@@ -17,15 +17,13 @@ public class GetPublicKeyCommand : ICommand
     public string Password { get; set; } = null!;
 
     [CommandParameter(1, Description = "Private key file.")]
-    public string KeyFile { get; set; } = null!;
+    public string AccountFile { get; set; } = null!;
 
     public async ValueTask ExecuteAsync(IConsole console)
     {
-        if (!File.Exists(KeyFile))
-            await console.Error.WriteLineAsync($"The file '{KeyFile}' don't exists.");
+        if (!console.Login(Password, AccountFile, out var account))
+            return;
 
-        var data = await File.ReadAllBytesAsync(KeyFile);
-        var account = new Account(data, Encoding.UTF8.GetBytes(Password));
         await console.Output.WriteLineAsync($"Your public key is {Convert.ToBase64String(account.PublicKey)}");
     }
 }

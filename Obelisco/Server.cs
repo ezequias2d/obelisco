@@ -185,7 +185,7 @@ public class Server : Client
         Block? nextBlock = await base.QueryNextBlock(currentLastBlock.Hash, cancellationToken).AsTask();
         while (nextBlock != null && currentLastBlock.Hash != nextBlock.Hash)
         {
-            await m_blockchain.PostBlock(nextBlock);
+            await m_blockchain.PostBlock(nextBlock, cancellationToken);
             currentLastBlock = nextBlock;
             nextBlock = await base.QueryNextBlock(currentLastBlock.Hash, cancellationToken).AsTask();
         }
@@ -201,7 +201,7 @@ public class Server : Client
 
     public override async ValueTask BroadcastBlock(Block block, CancellationToken cancellationToken)
     {
-        await m_blockchain.PostBlock(block);
+        await m_blockchain.PostBlock(block, cancellationToken);
         await base.BroadcastBlock(block, cancellationToken);
     }
 
@@ -252,5 +252,11 @@ public class Server : Client
     public override async ValueTask<Balance> QueryBalance(string owner, CancellationToken cancellationToken, IEnumerable<Balance>? balances = null)
     {
         return await m_blockchain.GetBalance(owner);
+    }
+
+    public override async ValueTask<TTransaction> QueryTransaction<TTransaction>(string transactionSignature, bool pending, CancellationToken cancellationToken)
+    {
+        var task = m_blockchain.GetTransaction(transactionSignature, pending, cancellationToken);
+        return ((await task) as TTransaction)!;
     }
 }

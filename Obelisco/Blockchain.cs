@@ -73,7 +73,7 @@ public class Blockchain
         return await GetBlock(m_lastBlockHash);
     }
 
-    public async ValueTask PostBlock(Block block)
+    public async ValueTask PostBlock(Block block, CancellationToken cancellationToken)
     {
         using var _ = await m_lastBlockLock.WriterLockAsync();
 
@@ -85,13 +85,20 @@ public class Blockchain
 
         #region Validate Transactions of Block
         var transactionsAreValid = true;
+
+        var balances = new Dictionary<string, Balance>();
         foreach (var transaction in block.Transactions)
         {
-            var t = m_context.FindTransaction(transaction.Signature);
-            if (t != null && !t.Pending)
-                throw new InvalidBlockException($"Transaction {transaction.Signature} are in blockchain.");
+            var t = GetTransaction(transaction.Sender, true, cancellationToken);
 
-            transactionsAreValid &= transaction.Validate(m_context, m_logger);
+            // create or get snapshots for validation
+            if (!balances.TryGetValue(transaction.Sender, out var balance))
+            {
+                balance = (await GetBalance(transaction.Sender)).GetSnapshot();
+                balances[transaction.Sender] = balance;
+            }
+
+            transactionsAreValid &= transaction.Consume(balance, m_context, m_logger);
         }
 
         if (!transactionsAreValid)
@@ -136,8 +143,17 @@ public class Blockchain
                 await m_context.Balances.AddAsync(balance);
             }
 
-            if (!finded.Consume(m_context))
+            if (!finded.Consume(balance, m_context, m_logger))
                 throw new NotImplementedException("Something went wrong, consume must be pass, because it was previously validated.");
+
+            // compute poll balance if is a vote.
+            if (finded is VoteTransaction voteTransaction)
+            {
+                var poll = m_context.PollTransactions.Find(voteTransaction.Poll)!;
+                var option = poll.Options[voteTransaction.Index];
+                option.Balance.Votes++;
+                m_context.PollOptionBalances.Update(option.Balance);
+            }
 
             balance.Nonce = Math.Max(balance.Nonce, finded.Nonce);
             m_context.Balances.Update(balance);
@@ -152,7 +168,6 @@ public class Blockchain
             {
                 Owner = block.Validator,
                 Coins = reward,
-                Polls = new List<PollTransaction>(),
                 Nonce = 0,
             };
             await m_context.Balances.AddAsync(validatorBalance);
@@ -183,15 +198,40 @@ public class Blockchain
 
     public async ValueTask<Balance> GetBalance(string ownerId)
     {
-        var balance = await m_context.Balances.FindAsync(ownerId);
-        if (balance != null)
-            balance.Polls = m_context.PollTransactions.Where(t => t.Sender == ownerId).ToList();
-        return balance ?? new Balance() { Owner = ownerId, Coins = 0, Polls = new List<PollTransaction>() };
+        var balance = await m_context.Balances.FindAsync(ownerId)
+            ?? new Balance() { Owner = ownerId, Coins = 0 };
+
+        balance.Polls = m_context.PollTransactions.Include(p => p.Options)
+            .Where(t =>
+                    t.Sender == ownerId &&
+                    t.Pending == false
+                ).ToList();
+
+        balance.PollOptionBalances = balance.Polls
+            .Select(t => t.Options.Select(op => op.Balance))
+            .ToList();
+
+        balance.UsedTickets = m_context.TicketTransactions
+            .Where(t =>
+                    t.Used == true &&
+                    t.Owner == ownerId &&
+                    t.Pending == false
+                ).ToList();
+
+        balance.UnusedTickets = m_context.TicketTransactions
+            .Where(t =>
+                    t.Used == false &&
+                    t.Owner == ownerId &&
+                    t.Pending == false
+                ).ToList();
+
+        return balance;
     }
 
     public async ValueTask PostTransaction(Transaction transaction)
     {
-        if (!transaction.Validate(m_context, m_logger))
+        var balance = (await GetBalance(transaction.Sender)).GetSnapshot();
+        if (!transaction.Consume(balance, m_context, m_logger))
             throw new InvalidTransactionException("The sender must has capacity to post transaction.");
 
         var finded = m_context.FindTransaction(transaction);
@@ -215,12 +255,25 @@ public class Blockchain
 
     public async ValueTask<ICollection<Transaction>> GetPendingTransactions()
     {
-        var pending = await m_context.PollTransactions
+        var pending = await m_context.Transactions
             .Where(pt => pt.Pending)
             .ToListAsync();
 
-        return pending.TakeWhile((t, i) => i < 256)
-            .Select<PollTransaction, Transaction>(t => t)
-            .ToList();
+        return pending.TakeWhile((t, i) => i < 256).ToList();
+    }
+
+    public async Task<Transaction> GetTransaction(string transactionSignature, bool pending, CancellationToken cancellationToken)
+    {
+        var transaction = await m_context.Transactions
+            .Where(pt => pt.Pending == pending && pt.Signature == transactionSignature)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (transaction == null)
+        {
+            var state = pending ? "pending" : "finished";
+            throw new InvalidTransactionException($"The transaction don't exist or not in {state}.");
+        }
+
+        return transaction;
     }
 }

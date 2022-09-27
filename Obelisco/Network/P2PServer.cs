@@ -77,7 +77,7 @@ public class P2PServer : P2PClient
     {
         try
         {
-            await m_blockchain.PostBlock(block);
+            await m_blockchain.PostBlock(block, cancellationToken);
             await SendOkResponse(cancellationToken);
         }
         catch (Exception ex)
@@ -137,5 +137,19 @@ public class P2PServer : P2PClient
             await SendResponse<BalanceResponse>(null, cancellationToken, ex.Message);
         }
     }
+
+    protected override async ValueTask GetTransactionResponse(string transactionSignature, bool pending, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var transaction = await m_blockchain.GetTransaction(transactionSignature, pending, cancellationToken);
+            await SendResponse<TransactionResponse>(new TransactionResponse() { Transaction = transaction }, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            await SendResponse<TransactionResponse>(null, cancellationToken, ex.Message);
+        }
+    }
+
     #endregion
 }

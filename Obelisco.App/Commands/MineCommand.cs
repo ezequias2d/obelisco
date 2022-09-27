@@ -34,24 +34,6 @@ namespace Obelisco.Commands
 
             var difficulty = await client.QueryDifficulty(token);
 
-            var pollTransactions = new List<PollTransaction>();
-            var voteTransactions = new List<VoteTransaction>();
-
-            foreach (var transaction in await transactions)
-            {
-                switch (transaction)
-                {
-                    case PollTransaction pt:
-                        pollTransactions.Add(pt);
-                        break;
-                    case VoteTransaction vt:
-                        voteTransactions.Add(vt);
-                        break;
-                    default:
-                        throw new NotImplementedException();
-                }
-            }
-
             var block = new Block()
             {
                 Version = 1,

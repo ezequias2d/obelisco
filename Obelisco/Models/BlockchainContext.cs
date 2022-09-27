@@ -1,6 +1,7 @@
 using System;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Proxies;
 using System.Threading.Tasks;
 
 namespace Obelisco;
@@ -19,6 +20,7 @@ public class BlockchainContext : DbContext
     public DbSet<VoteTransaction> VoteTransactions { get; set; } = null!;
     public DbSet<TicketTransaction> TicketTransactions { get; set; } = null!;
     public DbSet<PollOption> PollOptions { get; set; } = null!;
+    public DbSet<PollOptionBalance> PollOptionBalances { get; set; } = null!;
 
     public Transaction? FindTransaction(Transaction transaction)
     {
@@ -77,5 +79,15 @@ public class BlockchainContext : DbContext
             .HasOne<PollTransaction>(op => op.Poll)
             .WithMany(pl => pl.Options)
             .HasForeignKey(op => op.PollId);
+
+        modelBuilder.Entity<PollOption>()
+            .HasOne<PollOptionBalance>(option => option.Balance)
+            .WithOne(balance => balance.PollOption)
+            .HasForeignKey<PollOptionBalance>(balance => balance.PollOptionId);
+    }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseLazyLoadingProxies();
     }
 }

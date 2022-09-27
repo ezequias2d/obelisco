@@ -8,6 +8,20 @@ namespace Obelisco;
 
 public class PollOption : IEquatable<PollOption>
 {
+    public PollOption()
+    {
+
+    }
+
+    public PollOption(PollOption option)
+    {
+        Id = option.Id;
+        Index = option.Index;
+        Title = option.Title;
+        Description = option.Description;
+        PollId = option.PollId;
+    }
+
     [JsonIgnore, Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
     public int Index { get; set; }
@@ -15,7 +29,7 @@ public class PollOption : IEquatable<PollOption>
     public string Description { get; set; } = null!;
 
     [JsonIgnore]
-    public virtual PollOptionBalance Balance { get; set; } = null!;
+    public virtual PollOptionBalance Balance { get; set; }
 
     [JsonIgnore]
     public virtual string PollId { get; set; }
@@ -40,6 +54,6 @@ public class PollOption : IEquatable<PollOption>
 
     public override string? ToString()
     {
-        return JsonSerializer.Serialize(this);
+        return JsonSerializer.Serialize(this, new JsonSerializerOptions() { WriteIndented = true });
     }
 }

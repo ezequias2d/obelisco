@@ -53,7 +53,7 @@ namespace Obelisco.Commands
 
                 var str = $"Listening on {server.LocalEndpoint}";
                 console.Output.WriteLine(str);
-                console.Output.WriteLine("Use 'server quit' to exit."); // TODO
+                console.Output.WriteLine("Use 'server quit' to end server mode."); // TODO
             }
             else
             {

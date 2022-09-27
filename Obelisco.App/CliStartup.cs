@@ -5,23 +5,25 @@ using Typin.Modes;
 using Typin.Console;
 using Ninja.WebSockets;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.EntityFrameworkCore.Proxies;
 namespace Obelisco
 {
     public class CliStartup : ICliStartup
     {
+        private const string Version = "v0.1";
         private readonly IEnumerable<string> SupportedSubProtocols = new string[] { "obelisco" };
 
         public void Configure(CliApplicationBuilder app)
         {
             app.AddCommandsFromThisAssembly()
                 .UseConsole<SystemConsole>()
-                .ConfigureLogging((loggingBuilder) => loggingBuilder.AddConsole())
+                //.ConfigureLogging((loggingBuilder) => loggingBuilder.AddConsole())
                 .UseInteractiveMode()
                 .UseTitle("Obelisco")
                 .UseExecutableName("Obelisco")
-                .UseVersionText("v0.1")
-                .UseDescription("Obelisco Blockchain");
+                .UseVersionText(Version)
+                .UseDescription("Obelisco Blockchain")
+                .UseStartupMessage($" *** Obelisco {Version} ***", ConsoleColor.Yellow);
         }
 
         public void ConfigureServices(IServiceCollection services)
