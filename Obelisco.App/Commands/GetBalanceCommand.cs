@@ -20,7 +20,7 @@ namespace Obelisco.Commands
 
         public async ValueTask ExecuteAsync(IConsole console)
         {
-            if (!m_state.TryGetClient(console, out var client))
+            if (!m_state.GetClient(console, out var client))
                 return;
 
             var token = console.GetCancellationToken();

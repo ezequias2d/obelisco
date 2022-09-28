@@ -28,7 +28,7 @@ public class CreatePollCommand : ICommand
     {
         var token = console.GetCancellationToken();
 
-        if (!m_state.TryGetClient(console, out var client))
+        if (!m_state.GetClient(console, out var client))
             return;
 
         if (!console.Login(Password, KeyFile, out var account))

@@ -16,8 +16,12 @@ namespace Obelisco.Commands
 
         public async ValueTask ExecuteAsync(IConsole console)
         {
-            if (!m_state.TryGetClient(console, out var client))
+            if (!m_state.GetClient(console, out var client))
                 return;
+
+            string selfServer = string.Empty;
+            if (m_state.TryGetServer(out var s))
+                selfServer = "ws://" + s.LocalEndpoint.ToString()! + "/";
 
             var token = console.GetCancellationToken();
             var tasks = client.Connections.Select(c => c.GetServers(token).AsTask()).ToArray();
@@ -31,20 +35,34 @@ namespace Obelisco.Commands
 
             foreach (var server in set)
             {
+                if (server == selfServer)
+                {
+                    await console.Output.WriteLineAsync($"Skipping self({server})");
+                    continue;
+                }
+
                 await console.Output.WriteLineAsync($"Try connect to {server}");
                 if (Uri.TryCreate(server, UriKind.RelativeOrAbsolute, out var uri))
                 {
                     const int timeout = 5;
                     var source = new CancellationTokenSource();
                     var task = client.Connect(uri, source.Token).AsTask();
-                    if (!task.Wait(timeout * 1000))
+
+                    try
                     {
-                        source.Cancel();
-                        await console.Output.WriteLineAsync($"Timeout({timeout} seconds) when try connect to {uri}");
+                        if (!task.Wait(timeout * 1000))
+                        {
+                            source.Cancel();
+                            await console.Output.WriteLineAsync($"Timeout({timeout} seconds) when try connect to {uri}");
+                        }
+                        else
+                        {
+                            await console.Output.WriteLineAsync($"Connected to {uri}");
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        await console.Output.WriteLineAsync($"Connected to {uri}");
+                        await console.Error.WriteLineAsync(ex.Message);
                     }
                 }
                 else

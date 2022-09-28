@@ -31,7 +31,7 @@ public class Server : Client
         ILoggerFactory loggerFactory,
         IEnumerable<string> supportedSubProtocols,
         Blockchain blockchain)
-        : base(socketClientFactory, loggerFactory.CreateLogger<Client>(), new ConcurrentDictionary<Uri, (P2PClient, Task)>())
+        : base(socketClientFactory, loggerFactory.CreateLogger<Client>(), new ConcurrentDictionary<string, (P2PClient, Task)>())
     {
         m_logger = loggerFactory.CreateLogger<P2PServer>();
         m_blockchain = blockchain;
@@ -104,7 +104,7 @@ public class Server : Client
                         }
                         var uri = new Uri(remote);
                         await OnConnected(uri, p2p);
-                        m_connections[uri] = (p2p, task);
+                        m_connections[uri.ToString()] = (p2p, task);
                     }
                     else
                     {

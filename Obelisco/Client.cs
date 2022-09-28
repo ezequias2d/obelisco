@@ -14,14 +14,14 @@ public class Client : IDisposable
 {
     private readonly IWebSocketClientFactory m_socketFactory;
     private readonly ILogger m_logger;
-    protected readonly IDictionary<Uri, (P2PClient p2p, Task Task)> m_connections;
+    protected readonly IDictionary<string, (P2PClient p2p, Task Task)> m_connections;
     private event EventHandler<P2PClient>? m_connected;
     private int m_connectionNotifyCount = 0;
 
     public Client(IWebSocketClientFactory socketFactory, ILogger<Client> logger)
-        : this(socketFactory, logger, new Dictionary<Uri, (P2PClient, Task)>()) { }
+        : this(socketFactory, logger, new Dictionary<string, (P2PClient, Task)>()) { }
 
-    protected Client(IWebSocketClientFactory socketFactory, ILogger<Client> logger, IDictionary<Uri, (P2PClient, Task)> connections)
+    protected Client(IWebSocketClientFactory socketFactory, ILogger<Client> logger, IDictionary<string, (P2PClient, Task)> connections)
     {
         m_socketFactory = socketFactory;
         m_logger = logger;
@@ -38,12 +38,14 @@ public class Client : IDisposable
 
     public bool IsFullNode { get; protected set; }
     public bool IsDisposed { get; protected set; }
-    public Uri[] Servers => m_connections.Where(p => p.Value.p2p.IsFullNode).Select(p => p.Key).ToArray();
+    public Uri[] Servers => m_connections.Where(p => p.Value.p2p.IsFullNode).Select(p => new Uri(p.Key)).ToArray();
     public P2PClient[] Connections => m_connections.Values.Select(e => e.p2p).ToArray();
 
     public virtual async ValueTask Connect(Uri uri, CancellationToken cancellationToken)
     {
-        if (m_connections.TryGetValue(uri, out var connection) && !connection.p2p.IsDisposed)
+        var uriString = uri.ToString();
+
+        if (m_connections.TryGetValue(uriString, out var connection) && !connection.p2p.IsDisposed)
             throw new InvalidOperationException($"The client is already connected to '{uri}'.");
 
         var socket = await m_socketFactory.ConnectAsync(uri);
@@ -56,7 +58,7 @@ public class Client : IDisposable
 
         p2p.Init();
         await OnConnected(uri, p2p);
-        m_connections[uri] = (p2p, task);
+        m_connections[uriString] = (p2p, task);
     }
 
     protected async ValueTask OnConnected(Uri uri, P2PClient e)

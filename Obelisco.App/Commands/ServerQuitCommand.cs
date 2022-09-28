@@ -25,7 +25,7 @@ public class ServerQuitCommand : ICommand
     {
         await m_context.SaveChangesAsync();
 
-        if (m_state.TryGetServer(console, out var server))
+        if (m_state.GetServer(console, out var server))
         {
             server.Dispose();
             m_state.Server = null;

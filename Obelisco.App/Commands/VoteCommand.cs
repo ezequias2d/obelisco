@@ -25,7 +25,7 @@ public class VoteCommand : ICommand
     {
         // get client object
         var token = console.GetCancellationToken();
-        if (!m_state.TryGetClient(console, out var client))
+        if (!m_state.GetClient(console, out var client))
             return;
 
         // login with password and account file
