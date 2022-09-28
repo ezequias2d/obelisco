@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Obelisco;
 
+[JsonConverterAttribute(typeof(TransactionConverter))]
 public abstract class Transaction : IEquatable<Transaction>
 {
     public Transaction()
