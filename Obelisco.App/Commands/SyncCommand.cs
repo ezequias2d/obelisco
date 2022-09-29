@@ -55,11 +55,19 @@ namespace Obelisco.Commands
                     console.Output.WriteLine($"Request next block to {p2p.IP} server.");
                     return task.ContinueWith(task =>
                     {
-                        task.Wait();
-                        var block = task.Result;
-                        if (block != null)
-                            console.Output.WriteLine($"{p2p.IP} server returns the block {block.Hash}.");
-                        return block;
+                        try
+                        {
+                            task.Wait();
+                            var block = task.Result;
+                            if (block != null)
+                                console.Output.WriteLine($"{p2p.IP} server returns the block {block.Hash}.");
+                            return block;
+                        }
+                        catch (Exception ex)
+                        {
+                            console.Output.WriteLine($"{p2p.IP} server returns the error: {ex.Message}.");
+                            return null;
+                        }
                     });
                 })
                 .ToArray();

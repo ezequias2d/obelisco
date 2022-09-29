@@ -18,6 +18,23 @@ public class Block : IEquatable<Block>
 
     }
 
+    public Block(Block block)
+    {
+        Version = block.Version;
+        Timestamp = block.Timestamp;
+        Transactions = block.Transactions.Select<Transaction, Transaction>(t => t switch
+        {
+            PollTransaction pt => (Transaction)new PollTransaction(pt),
+            TicketTransaction tt => (Transaction)new TicketTransaction(tt),
+            VoteTransaction vt => (Transaction)new VoteTransaction(vt),
+        }).ToList();
+        Validator = block.Validator;
+        Nonce = block.Nonce;
+        Difficulty = block.Difficulty;
+        Hash = block.Hash;
+        PreviousHash = block.PreviousHash;
+    }
+
     /// <summary>
     /// Version number, for track any changes or upgrades in protocol.
     /// </summary>

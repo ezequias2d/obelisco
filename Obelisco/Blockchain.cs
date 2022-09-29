@@ -54,17 +54,17 @@ public class Blockchain
         if (block is null)
             throw new ArgumentOutOfRangeException("The block dont exist.");
 
-        return block;
+        return new Block(block);
     }
 
     public async ValueTask<Block> GetNextBlock(string blockId)
     {
         Block? next = m_context.Blocks.Where(b => b.PreviousHash == blockId).FirstOrDefault();
 
-        if (blockId is null)
+        if (next is null)
             throw new ArgumentOutOfRangeException("The block is the last.");
 
-        return next;
+        return new Block(next);
     }
 
     public async ValueTask<Block> GetLastBlock(CancellationToken cancellationToken)
