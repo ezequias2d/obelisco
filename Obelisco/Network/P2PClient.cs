@@ -13,7 +13,7 @@ public class P2PClient : P2P
     private const int REF_SERVERS = 10;
     private readonly Client m_client;
     private event EventHandler<PostServersRequest>? m_postServers;
-    public P2PClient(Client client, ILogger logger, WebSocket socket, Guid id) : base(logger, socket, id)
+    public P2PClient(Client client, ILogger logger, WebSocket socket, string ip) : base(logger, socket, ip)
     {
         m_client = client;
         Servers += OnServers;

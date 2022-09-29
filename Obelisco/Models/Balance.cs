@@ -40,7 +40,7 @@ public class Balance : IEquatable<Balance>
     public virtual IList<PollTransaction> Polls { get; set; } = new List<PollTransaction>();
 
     [NotMapped]
-    public virtual IList<IEnumerable<PollOptionBalance>> PollOptionBalances { get; set; } = new List<IEnumerable<PollOptionBalance>>();
+    public virtual IList<PollBalance> PollBalances { get; set; } = new List<PollBalance>();
 
     public bool Equals(Balance? other)
     {
@@ -71,9 +71,7 @@ public class Balance : IEquatable<Balance>
             UnusedTickets = new List<TicketTransaction>(UnusedTickets.Select(t => new TicketTransaction(t))),
             UsedTickets = new List<TicketTransaction>(UsedTickets.Select(t => new TicketTransaction(t))),
             Polls = new List<PollTransaction>(Polls.Select(t => new PollTransaction(t))),
-            PollOptionBalances = new List<IEnumerable<PollOptionBalance>>(
-                    Polls.Select(t => t.Options.Select(b => new PollOptionBalance(b.Balance)))
-                )
+            PollBalances = new List<PollBalance>(PollBalances.Select(b => new PollBalance(b)))
         };
     }
 }

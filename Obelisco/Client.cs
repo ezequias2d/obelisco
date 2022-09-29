@@ -1,3 +1,4 @@
+using System.Net.WebSockets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,16 +50,26 @@ public class Client : IDisposable
             throw new InvalidOperationException($"The client is already connected to '{uri}'.");
 
         var socket = await m_socketFactory.ConnectAsync(uri);
-        var p2p = new P2PClient(this, m_logger, socket, Guid.NewGuid());
+        var p2p = CreateP2PClient(this, m_logger, socket, uriString);
+
+        var cancellationTokenSource = new CancellationTokenSource();
 
         var task = Task.Run(async () =>
         {
             await p2p.Receive(cancellationToken);
+            m_logger?.LogInformation($"Client: Connection with {uriString} closed");
+            m_connections.Remove(uriString);
+            cancellationTokenSource.Cancel();
         }, cancellationToken);
 
-        p2p.Init();
+        p2p.Init(cancellationTokenSource.Token);
         await OnConnected(uri, p2p);
         m_connections[uriString] = (p2p, task);
+    }
+
+    protected virtual P2PClient CreateP2PClient(Client client, ILogger logger, WebSocket socket, string ip)
+    {
+        return new P2PClient(this, m_logger, socket, ip);
     }
 
     protected async ValueTask OnConnected(Uri uri, P2PClient e)

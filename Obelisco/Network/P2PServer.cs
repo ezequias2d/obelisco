@@ -10,7 +10,7 @@ public class P2PServer : P2PClient
 {
     private readonly Server m_server;
     private readonly Blockchain m_blockchain;
-    public P2PServer(Server server, Blockchain blockchain, ILogger logger, WebSocket socket, Guid id) : base(server, logger, socket, id)
+    public P2PServer(Server server, Blockchain blockchain, ILogger logger, WebSocket socket, string ip) : base(server, logger, socket, ip)
     {
         m_server = server;
         m_blockchain = blockchain;
@@ -39,7 +39,7 @@ public class P2PServer : P2PClient
         try
         {
             var block = await m_blockchain.GetNextBlock(blockId);
-            await SendBlockResponse(block, cancellationToken);
+            await SendBlockResponse(block, cancellationToken, forceOk: true);
         }
         catch (Exception ex)
         {

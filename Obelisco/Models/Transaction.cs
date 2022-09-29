@@ -42,7 +42,7 @@ public abstract class Transaction : IEquatable<Transaction>
     public int Index { get; set; }
 
     [JsonIgnore]
-    public bool Pending { get; set; }
+    public bool Pending { get; set; } = true;
 
 
     public virtual bool Equals(Transaction? other)

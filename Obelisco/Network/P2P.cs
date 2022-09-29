@@ -19,9 +19,9 @@ public abstract class P2P : IDisposable
     private bool m_isDisposed;
     private BlockingCollection<Response> m_responses;
 
-    internal P2P(ILogger logger, WebSocket socket, Guid id)
+    internal P2P(ILogger logger, WebSocket socket, string ip)
     {
-        ID = id;
+        IP = ip;
         m_logger = logger;
         m_socket = socket;
         m_responses = new BlockingCollection<Response>();
@@ -29,14 +29,14 @@ public abstract class P2P : IDisposable
     }
 
     public bool IsDisposed => m_isDisposed;
-    public Guid ID { get; }
+    public string IP { get; internal set; }
     public bool IsFullNode { get; private set; }
 
-    internal void Init()
+    internal void Init(CancellationToken cancellationToken)
     {
         var source = new CancellationTokenSource();
         var task = GetNodeType(source.Token).AsTask();
-        if (!task.Wait(30 * 1000))
+        if (!task.Wait(30 * 1000, cancellationToken))
             throw new InvalidOperationException("The P2P dont response GetNodeType.");
         IsFullNode = task.Result;
     }
@@ -66,7 +66,7 @@ public abstract class P2P : IDisposable
             m_logger.LogInformation($"Receive: {str}");
 
             Message? message = Json.Deserialize<Message>(str);
-            LogInfo($"{this.ID}, {message?.GetType().Name ?? "NULL"}: {str}");
+            LogInfo($"{this.IP}, {message?.GetType().Name ?? "NULL"}: {str}");
 
             await OnMessage(message, cancellationToken);
         }
@@ -234,11 +234,13 @@ public abstract class P2P : IDisposable
         await SendResponse<Response>(null, cancellationToken, message);
     }
 
-    protected async ValueTask SendBlockResponse(Block? block, CancellationToken cancellationToken, string? message = null)
+    protected async ValueTask SendBlockResponse(Block? block, CancellationToken cancellationToken, string? message = null, bool forceOk = false)
     {
         BlockResponse? response = null;
         if (block != null)
             response = new BlockResponse() { Block = block };
+        else if (forceOk)
+            response = new BlockResponse() { Ok = true };
         await SendResponse(response, cancellationToken, message);
     }
 

@@ -70,7 +70,19 @@ public class Server : Client
 
                         m_logger.LogInformation("Web Socket handshake response sent. Stream ready.");
 
-                        var p2p = new P2PServer(this, m_blockchain, m_loggerFactory.CreateLogger<P2PServer>(), webSocket, Guid.NewGuid());
+                        var p2p = new P2PServer(this, m_blockchain, m_loggerFactory.CreateLogger<P2PServer>(), webSocket, "");
+
+                        string remote = $"ws://{tcpClient.Client.RemoteEndPoint!.ToString()}";
+                        if (p2p.IsFullNode)
+                        {
+                            remote = $"ws://{await p2p.GetServerAddress(cancellationToken)}";
+                        }
+
+                        var uri = new Uri(remote);
+                        var uriString = uri.ToString();
+                        p2p.IP = uriString;
+
+                        var cancellationTokenSource = new CancellationTokenSource();
 
                         var task = Task.Run(async () =>
                         {
@@ -78,33 +90,32 @@ public class Server : Client
                             // Client sends a close conection request OR
                             // An unhandled exception is thrown OR
                             // The server is disposed
-                            m_logger.LogInformation("Server: Connection opened. Reading Http header from stream");
+                            m_logger?.LogInformation("Server: Connection opened. Reading Http header from stream");
                             try
                             {
                                 await p2p.Receive(cancellationToken);
                             }
                             catch (Exception ex)
                             {
-                                m_logger.LogError(ex, "Error on server p2p receive.");
+                                m_logger?.LogError(ex, "Error on server p2p receive.");
                             }
                             finally
                             {
+                                m_logger?.LogInformation("Server: Connection closed");
+                                m_connections.Remove(uriString);
+                                cancellationTokenSource.Cancel();
+
                                 tcpClient.Client.Close();
                                 tcpClient.Close();
+                                tcpClient.Dispose();
+                                webSocket.Dispose();
                             }
-                            m_logger.LogInformation("Server: Connection closed");
-                        }, cancellationToken);
+                        });
 
-                        p2p.Init();
+                        p2p.Init(cancellationTokenSource.Token);
 
-                        string remote = $"ws://{tcpClient.Client.RemoteEndPoint!.ToString()}";
-                        if (p2p.IsFullNode)
-                        {
-                            remote = $"ws://{await p2p.GetServerAddress(cancellationToken)}";
-                        }
-                        var uri = new Uri(remote);
                         await OnConnected(uri, p2p);
-                        m_connections[uri.ToString()] = (p2p, task);
+                        m_connections[uriString] = (p2p, task);
                     }
                     else
                     {
@@ -119,6 +130,11 @@ public class Server : Client
             string message = string.Format("Error listening on port {0}. Make sure IIS or another application is not running and consuming your port.", port);
             throw new Exception(message, ex);
         }
+    }
+
+    protected override P2PClient CreateP2PClient(Client client, ILogger logger, WebSocket socket, string ip)
+    {
+        return new P2PServer(this, m_blockchain, m_logger, socket, ip);
     }
 
     private string? GetSubProtocol(IList<string> requestedSubProtocols)

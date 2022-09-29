@@ -19,7 +19,6 @@ public class PollOption : IEquatable<PollOption>
         Index = option.Index;
         Title = option.Title;
         Description = option.Description;
-        PollId = option.PollId;
     }
 
     [JsonIgnore, Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -27,12 +26,6 @@ public class PollOption : IEquatable<PollOption>
     public int Index { get; set; }
     public string Title { get; set; } = null!;
     public string Description { get; set; } = null!;
-
-    [JsonIgnore]
-    public virtual PollOptionBalance Balance { get; set; }
-
-    [JsonIgnore]
-    public virtual string PollId { get; set; }
 
     [JsonIgnore]
     public virtual PollTransaction Poll { get; set; }

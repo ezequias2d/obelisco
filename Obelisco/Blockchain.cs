@@ -106,8 +106,6 @@ public class Blockchain
         #endregion
 
         m_lastBlockHash = block.Hash;
-        // add block
-        var addBlock = m_context.Blocks.AddAsync(block);
 
         // add complete transactions or update pending transactions to be complete
         foreach (var transaction in block.Transactions)
@@ -117,8 +115,7 @@ public class Blockchain
             if (finded != null)
             {
                 // update transaction to complete
-
-                if (finded.GetType() != transaction.GetType())
+                if (!transaction.GetType().IsAssignableFrom(finded.GetType()))
                     throw new InvalidTransactionException("Something went wrong, transaction types are wrong!");
 
                 if (finded.Pending == false)
@@ -151,13 +148,29 @@ public class Blockchain
             {
                 var poll = m_context.PollTransactions.Find(voteTransaction.Poll)!;
                 var option = poll.Options[voteTransaction.Index];
-                option.Balance.Votes++;
-                m_context.PollOptionBalances.Update(option.Balance);
+
+                var pollBalance = m_context.PollBalances.Find(voteTransaction.Poll);
+                if (pollBalance == null)
+                {
+                    pollBalance = new(poll);
+                    await m_context.PollBalances.AddAsync(pollBalance);
+                }
+
+                var optionBalance = pollBalance.Options.FirstOrDefault(op => op.Index == voteTransaction.Index);
+                if (optionBalance == null)
+                    throw new NotImplementedException($"Something went wrong, option of index {voteTransaction.Index} don't exist.");
+                optionBalance.Votes++;
+                m_context.PollBalances.Update(pollBalance);
             }
 
             balance.Nonce = Math.Max(balance.Nonce, finded.Nonce);
             m_context.Balances.Update(balance);
         }
+
+        await m_context.SaveChangesAsync();
+
+        // add block
+        var addBlock = m_context.Blocks.AddAsync(block);
 
         // reward
         var reward = GetReward(block);
@@ -207,8 +220,8 @@ public class Blockchain
                     t.Pending == false
                 ).ToList();
 
-        balance.PollOptionBalances = balance.Polls
-            .Select(t => t.Options.Select(op => op.Balance))
+        balance.PollBalances = balance.Polls
+            .Select(t => m_context.PollBalances.Find(t.Signature) ?? new(t))
             .ToList();
 
         balance.UsedTickets = m_context.TicketTransactions
