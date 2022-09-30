@@ -14,7 +14,7 @@ public class PollBalance
     public PollBalance(PollTransaction poll)
     {
         Poll = poll.Signature;
-        Options = poll.Options.Select(op => new PollOptionBalance() { Index = op.Index, Votes = 0 });
+        Options = poll.Options.Select(op => new PollOptionBalance() { Index = op.Index, Votes = 0 }).ToList();
     }
 
     public PollBalance(PollBalance pollBalance)
@@ -26,5 +26,5 @@ public class PollBalance
     [Key]
     public string Poll { get; set; }
 
-    public virtual IEnumerable<PollOptionBalance> Options { get; set; }
+    public virtual IList<PollOptionBalance> Options { get; set; }
 }

@@ -31,6 +31,8 @@ public class BlockchainContext : DbContext
                 return PollTransactions.Find(pt.Signature);
             case VoteTransaction vt:
                 return VoteTransactions.Find(vt.Signature);
+            case TicketTransaction tt:
+                return TicketTransactions.Find(tt.Signature);
             default:
                 return null;
         }
@@ -41,6 +43,8 @@ public class BlockchainContext : DbContext
         Transaction? result = PollTransactions.Find(signature);
         if (result == null)
             result = VoteTransactions.Find(signature);
+        if (result == null)
+            result = TicketTransactions.Find(signature);
         return result;
     }
 
@@ -53,6 +57,9 @@ public class BlockchainContext : DbContext
                 break;
             case VoteTransaction vt:
                 await VoteTransactions.AddAsync(vt);
+                break;
+            case TicketTransaction tt:
+                await TicketTransactions.AddAsync(tt);
                 break;
             default:
                 break;
@@ -68,6 +75,9 @@ public class BlockchainContext : DbContext
                 break;
             case VoteTransaction vt:
                 VoteTransactions.Update(vt);
+                break;
+            case TicketTransaction tt:
+                TicketTransactions.Update(tt);
                 break;
             default:
                 throw new InvalidOperationException();
@@ -85,5 +95,6 @@ public class BlockchainContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder.UseLazyLoadingProxies();
+        optionsBuilder.EnableSensitiveDataLogging(true);
     }
 }

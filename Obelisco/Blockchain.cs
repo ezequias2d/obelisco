@@ -108,8 +108,9 @@ public class Blockchain
         m_lastBlockHash = block.Hash;
 
         // add complete transactions or update pending transactions to be complete
-        foreach (var transaction in block.Transactions)
+        for (var i = 0; i < block.Transactions.Count; i++)
         {
+            var transaction = block.Transactions[i];
             var finded = m_context.FindTransaction(transaction.Signature);
 
             if (finded != null)
@@ -123,6 +124,7 @@ public class Blockchain
 
                 finded.Pending = false;
                 m_context.UpdateTransaction(finded);
+                block.Transactions[i] = finded;
             }
             else
             {
