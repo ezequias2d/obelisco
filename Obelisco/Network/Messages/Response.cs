@@ -14,6 +14,11 @@ public class BlockResponse : Response
     public Block Block { get; set; } = null!;
 }
 
+public class BlocksResponse : Response
+{
+    public IEnumerable<Block> Blocks { get; set; } = Enumerable.Empty<Block>();
+}
+
 public class ServersResponse : Response
 {
     public IEnumerable<string> Servers { get; set; } = Enumerable.Empty<string>();

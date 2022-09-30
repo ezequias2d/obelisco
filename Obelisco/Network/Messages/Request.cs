@@ -14,6 +14,8 @@ public class GetNextBlockRequest : Request
     public string BlockID { get; set; } = null!;
 }
 
+public class GetAllBlocksRequest : Request { }
+
 public class GetLastBlockRequest : Request { }
 
 public class GetGenesisRequest : Request { }

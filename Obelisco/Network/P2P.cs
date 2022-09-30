@@ -155,6 +155,9 @@ public abstract class P2P : IDisposable
                 case GetTransactionRequest m:
                     await GetTransactionResponse(m.TransactionSignature, m.Pending, cancellationToken);
                     break;
+                case GetAllBlocksRequest m:
+                    await GetAllBlocksResponse(cancellationToken);
+                    break;
                 default:
                     var str = message != null ? Json.Serialize<Message>(message) : "NULL";
                     LogError($"Invalid message: {str}");
@@ -302,6 +305,11 @@ public abstract class P2P : IDisposable
     protected virtual async ValueTask GetTransactionResponse(string transactionSignature, bool pending, CancellationToken cancellationToken)
     {
         await SendResponse<TransactionResponse>(null, cancellationToken, "Not supported.");
+    }
+
+    protected virtual async ValueTask GetAllBlocksResponse(CancellationToken cancellationToken)
+    {
+        await SendResponse<BlocksResponse>(null, cancellationToken, "Not supported.");
     }
 
     #endregion

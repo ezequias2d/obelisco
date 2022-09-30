@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -149,6 +150,25 @@ public class P2PServer : P2PClient
         {
             await SendResponse<TransactionResponse>(null, cancellationToken, ex.Message);
         }
+    }
+
+    protected override async ValueTask GetAllBlocksResponse(CancellationToken cancellationToken)
+    {
+        var blocks = new List<Block>();
+        var current = m_blockchain.GetGenesis();
+        while (true)
+        {
+            blocks.Add(current);
+            try
+            {
+                current = await m_blockchain.GetNextBlock(current.Hash);
+            }
+            catch
+            {
+                break;
+            }
+        }
+        await SendResponse<BlocksResponse>(new BlocksResponse() { Blocks = blocks }, cancellationToken);
     }
 
     #endregion
