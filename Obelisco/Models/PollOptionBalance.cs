@@ -25,7 +25,7 @@ public class PollOptionBalance : IEquatable<PollOptionBalance>
 
     public bool Equals(PollOptionBalance? other)
     {
-        return other != null && Votes == other.Votes;
+        return other != null && Id == other.Id && Index == other.Index && Votes == other.Votes;
     }
 
     public override bool Equals(object? obj)

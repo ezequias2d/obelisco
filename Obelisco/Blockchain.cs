@@ -152,24 +152,27 @@ public class Blockchain
                 var option = poll.Options[voteTransaction.Index];
 
                 var pollBalance = m_context.PollBalances.Find(voteTransaction.Poll);
+                bool add = false;
                 if (pollBalance == null)
                 {
                     pollBalance = new(poll);
-                    await m_context.PollBalances.AddAsync(pollBalance);
+                    add = true;
                 }
 
                 var optionBalance = pollBalance.Options.FirstOrDefault(op => op.Index == voteTransaction.Index);
                 if (optionBalance == null)
                     throw new NotImplementedException($"Something went wrong, option of index {voteTransaction.Index} don't exist.");
                 optionBalance.Votes++;
-                m_context.PollBalances.Update(pollBalance);
+
+                if (add)
+                    await m_context.PollBalances.AddAsync(pollBalance);
+                else
+                    m_context.PollBalances.Update(pollBalance);
             }
 
             balance.Nonce = Math.Max(balance.Nonce, finded.Nonce);
             m_context.Balances.Update(balance);
         }
-
-        await m_context.SaveChangesAsync();
 
         // add block
         var addBlock = m_context.Blocks.AddAsync(block);
