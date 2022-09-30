@@ -57,7 +57,8 @@ public class TransactionConverter : JsonConverter<Transaction>
             default:
                 {
                     var type = value.GetType();
-                    using var jsonDocument = JsonDocument.Parse(JsonSerializer.Serialize(value, type, options));
+                    var serialized = JsonSerializer.Serialize(value, type, options);
+                    using var jsonDocument = JsonDocument.Parse(serialized);
                     writer.WriteStartObject();
 
                     var typeName = value switch

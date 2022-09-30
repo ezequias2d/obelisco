@@ -12,7 +12,6 @@ namespace Obelisco;
 public class PollTransaction : Transaction, IEquatable<PollTransaction>
 {
     public const int Cost = 10;
-    private IList<PollOption> m_options = new List<PollOption>();
 
     public PollTransaction()
     {
@@ -34,13 +33,13 @@ public class PollTransaction : Transaction, IEquatable<PollTransaction>
     {
         Title = transaction.Title;
         Description = transaction.Description;
-        m_options = transaction.Options.Select(op => new PollOption(op)).ToList();
+        Options = transaction.Options.Select(op => new PollOption(op)).ToList();
     }
 
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
 
-    public virtual IList<PollOption> Options { get; set; }
+    public virtual IList<PollOption> Options { get; set; } = new List<PollOption>();
 
     public bool Equals(PollTransaction? other)
     {
