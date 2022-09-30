@@ -6,7 +6,7 @@ using Typin.Console;
 
 namespace Obelisco.Commands
 {
-    [Command("sync", Description = "sync")]
+    [Command("sync", Description = "Try to sync with remote servers.")]
     public class SyncCommand : ICommand
     {
         private readonly ILogger m_logger;

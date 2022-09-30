@@ -4,7 +4,7 @@ using Typin.Console;
 
 namespace Obelisco.Commands
 {
-    [Command("connect", Description = "Create and start the server.")]
+    [Command("connect", Description = "Connect to a server node.")]
     public class ConnectCommand : ICommand
     {
         private readonly IEnumerable<string> SupportedSubProtocols = new string[] { "obelisco" };

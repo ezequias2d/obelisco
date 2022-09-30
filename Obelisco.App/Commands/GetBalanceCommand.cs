@@ -5,7 +5,7 @@ using Typin.Console;
 
 namespace Obelisco.Commands
 {
-    [Command("get balance", Description = "send message")]
+    [Command("get balance", Description = "Get balance of a wallet.")]
     public class GetBalanceCommand : ICommand
     {
         private readonly State m_state;

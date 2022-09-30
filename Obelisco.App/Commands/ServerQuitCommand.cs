@@ -4,7 +4,7 @@ using Typin.Console;
 
 namespace Obelisco.App.Commands;
 
-[Command("server quit", Description = "Quits the application")]
+[Command("server quit", Description = "Quits server mode.")]
 public class ServerQuitCommand : ICommand
 {
     private readonly BlockchainContext m_context;

@@ -4,7 +4,7 @@ using Typin.Console;
 
 namespace Obelisco.App.Commands;
 
-[Command("create poll", Description = "send message")]
+[Command("create poll", Description = "Create a poll transaction.")]
 public class CreatePollCommand : ICommand
 {
     private readonly ICliApplicationLifetime m_applicationLifetime;

@@ -5,7 +5,7 @@ using Typin.Console;
 
 namespace Obelisco.App.Commands;
 
-[Command("vote", Description = "Create a account identity.")]
+[Command("vote", Description = "Spend a ticket and vote.")]
 public class VoteCommand : ICommand
 {
     private readonly State m_state;

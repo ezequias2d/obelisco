@@ -5,7 +5,7 @@ using Typin.Console;
 
 namespace Obelisco.App.Commands;
 
-[Command("transfer", Description = "Create a account identity.")]
+[Command("transfer", Description = "Transfer a ticket to a wallet.")]
 public class TransferTokenCommand : ICommand
 {
     private readonly State m_state;

@@ -4,7 +4,7 @@ using Typin.Console;
 
 namespace Obelisco.Commands
 {
-    [Command("mine", Description = "Quits the application")]
+    [Command("mine", Description = "Mine a block for and give coins to a validator wallet.")]
     public class MineCommand : ICommand
     {
         private readonly State m_state;
