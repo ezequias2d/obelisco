@@ -12,13 +12,13 @@ public class Account
 
 	public Account(ReadOnlySpan<byte> publicKey)
 	{
-		Key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+		Key = ECDsa.Create(ECCurve.NamedCurves.nistP384);
 		Key.ImportSubjectPublicKeyInfo(publicKey, out _);
 	}
 
 	public Account(ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> password)
 	{
-		Key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+		Key = ECDsa.Create(ECCurve.NamedCurves.nistP384);
 		Key.ImportEncryptedPkcs8PrivateKey(password, privateKey, out _);
 	}
 
